@@ -744,6 +744,8 @@ function render({ showStd = false } = {}) {
           className: "tenpulls-items tenpulls-items-4",
         })
         $tenThrees = document.createDocumentFragment()
+      } else {
+        $time.append(` [LOG] ${JSON.stringify({type,time,ei,segeip9:seg[ei+9]})}`)
       }
 
       const name = entry.name
