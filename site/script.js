@@ -26,22 +26,23 @@ function onlyProps(obj, props) {
   return obj
 }
 
-/** @typedef {"200" | "301" | "302" | "400"} GachaType */
-/** @typedef {"200" | "301" | "302"} UIGFGachaType */
-/** @typedef {"char" | "weapon" | "std"} GachaTypeName */
+/** @typedef {"100" | "200" | "301" | "302" | "400"} GachaType */
+/** @typedef {"100" | "200" | "301" | "302"} UIGFGachaType */
+/** @typedef {"char" | "weapon" | "std" | "novice"} GachaTypeName */
 /** @typedef {"char" | "charLost5050" | "weapon" | "std"} PityType */
 /** @typedef {"3" | "4" | "5"} Rarity */
 /**
  * @typedef {{
- *   time: string,
- *   rank_type: Rarity,
+ *   count: number,
  *   id: string,
+ *   item_type: string,
  *   gacha_type: GachaType,
  *   name: string,
+ *   rank_type: Rarity,
+ *   time: string,
  *   uigf_gacha_type: UIGFGachaType,
  * }} GachaEntry
  */
-/** @typedef {GachaEntry[] & { $pi?: Node }} Segment */
 /**
  * @typedef {{
  *   label: string,
@@ -60,14 +61,6 @@ function onlyProps(obj, props) {
  */
 /**
  * @typedef {{
- *   soulGIGacha: "v1",
- *   uid: string,
- *   segments: GachaEntry[][],
- *   pityInit: PityInit,
- * }} MergedHistoryV1
- */
-/**
- * @typedef {{
  *   info: {
  *     uid: string,
  *     lang: string,
@@ -79,19 +72,7 @@ function onlyProps(obj, props) {
  *   list: GachaEntry[],
  * }} UIGFMergedHistory
  */
-/** @interface */
-class PityInit {
-  /** @type {number} */ charPity
-  /** @type {number} */ charLost5050Pity
-  /** @type {number} */ weaponPity
-  /** @type {number} */ stdPity
-  /** @type {boolean} */ charUncertain
-  /** @type {boolean} */ charLost5050Uncertain
-  /** @type {boolean} */ weaponUncertain
-  /** @type {boolean} */ stdUncertain
-}
 
-/** @implements {PityInit} */
 class PityTracker {
   constructor() {
     this.charPity = 0
@@ -121,6 +102,8 @@ class PityTracker {
         return "weapon"
       case "200":
         return "std"
+      case "100":
+        return "novice"
       default:
         throw new Error("PityTracker: invalid gacha type")
     }
@@ -133,6 +116,8 @@ class PityTracker {
    * @param {Banner} banner
    */
   next(type, name, rarity, banner) {
+    if (type === "100") return null
+
     const is5Star = rarity === "5"
 
     if (type === "301" || type === "400") {
@@ -205,6 +190,8 @@ class PityTracker {
    * @param {GachaType} type
    */
   stat(type) {
+    if (type === "100") return null
+
     if (type === "301" || type === "400") {
       const pity = this.charPity
       const lost5050Pity = this.charLost5050Pity
@@ -266,11 +253,13 @@ function formatDur(d) {
 const datetimeRe =
   /^(2\d{3})[-/](0[1-9]|1[0-2])[-/]([0-2]\d|3[01]) ([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/
 const entryProps = Object.freeze([
-  "time",
-  "rank_type",
-  "id",
+  "count",
   "gacha_type",
+  "id",
+  "item_type",
   "name",
+  "rank_type",
+  "time",
 ])
 /** @type {VersionHalf[]} */
 let versionHalves
@@ -279,8 +268,14 @@ let eventBanners
 /** @type {Banner[]} */
 let stdBanners
 
-/** @type {Segment[]} */
+/** @type {GachaEntry[]} */
+let entryList = []
+/**
+ * @deprecated
+ * @type {Segment[]}
+ */
 const segments = []
+/** @deprecated */
 let entryCount = 0
 let uid = null
 
@@ -300,73 +295,61 @@ function compareEntries(e1, e2) {
 }
 
 /**
+ * @param {GachaType} type
+ * @returns {UIGFGachaType}
+ */
+function toUIGFGachaType(type) {
+  if (type === "400") return "301"
+  return type
+}
+
+/**
  * @param {GachaEntry} entry
- * @returns {[number, number]}
  */
 function bisectEntry(entry) {
   let start = 0
-  let end = segments.length
+  let end = entryList.length
   let mid = 0
 
   while (true) {
-    if (start === end) return [start, 0]
-    //_adl()
+    if (start === end) return start
     mid = ~~((start + end) / 2)
-    if (compareEntries(entry, last(segments[mid])) > 0) start = mid + 1
-    else if (compareEntries(entry, segments[mid][0]) < 0) end = mid
-    else break
-  }
-
-  const x = mid
-  const segment = segments[x]
-  start = 0
-  end = segment.length
-  while (true) {
-    if (start === end) return [x, start]
-    //_adl()
-    mid = ~~((start + end) / 2)
-    const d = compareEntries(entry, segment[mid])
+    const d = compareEntries(entry, entryList[mid])
     if (d > 0) start = mid + 1
     else if (d < 0) end = mid
-    else return [x, mid]
+    else return mid
   }
 }
 
 /**
- * @param {GachaEntry[] | MergedHistoryV1} entries
- * @param {string} [_uid=]
+ * @param {GachaEntry[]} entries
+ * @param {string} uid
  */
-function addEntries(entries, _uid) {
-  // TODO: switch to UIGF.J format
-  if (entries.soulGIGacha === "v1") {
-    entries.segments.forEach((seg, i) => {
-      let newSegI
-      try {
-        newSegI = addEntries(seg, entries.uid)
-      } catch (err) {
-        if (entries.segments.length > 1 && typeof err === "string")
-          throw `导入合并记录的第 ${i + 1} 段时，${err}`
-        throw err
-      }
-      if (
-        entries.pityInit &&
-        compareEntries(seg[0], segments[newSegI][0]) === 0
-      ) {
-        reversePityInit(entries.pityInit[i], segments[newSegI])
-      }
-    })
-    return
-  }
+function addEntries(newEntries, uid) {
+  validateEntries(newEntries)
 
-  if (_uid) entries[0].uid = _uid
-  if (!validateEntries(entries)) return
-
-  //const oldCount = entryCount
-  let segmentIndex = 0
-
-  if (segments.length === 0) {
-    segments.push(entries)
+  if (entryList.length === 0) {
+    entryList = newEntries
   } else {
+    let existingI = bisectEntry(newEntries[0])
+    const mergedEntries = entryList.slice(0, existingI)
+
+    let newI = 0
+    while (newI < newEntries.length) {
+      const newEntry = newEntries[newI]
+      const existingEntry = entryList[existingI]
+
+      const d = compareEntries(newEntry, existingEntry)
+      const earlierEntry = d < 0 ? newEntry : existingEntry
+      mergedEntries.push(earlierEntry)
+      if (d <= 0) newI++
+    }
+
+    mergedEntries = mergedEntries.concat(entryList.slice(existingI))
+
+    entryList = mergedEntries
+
+    //////////////////
     const [x1, y1, x2, y2, mergedEntries] = findOverlap(entries)
     const pre = (segments[x1] || []).slice(0, y1)
     const post = (segments[x2] || []).slice(y2)
@@ -379,8 +362,7 @@ function addEntries(entries, _uid) {
     segmentIndex = x1
   }
 
-  updateSegmentsStatus()
-  return segmentIndex
+  updateEntryListStatus()
 
   /**
    * @param {GachaEntry[]} entries
@@ -423,39 +405,30 @@ function addEntries(entries, _uid) {
 }
 
 /**
- * @param {unknown} entries
- * @returns {entries is GachaEntry[]}
+ * @param {GachaEntry[]} entries
  */
 function validateEntries(entries) {
-  if (!Array.isArray(entries)) throw "数据对象不是数组"
-  if (entries.length < 1) throw "数据数组为空"
+  if (!Array.isArray(entries)) throw "记录列表不是数组"
+  if (entries.length < 1) throw "记录为空"
 
-  if (!segments.length) {
-    if (entries[0].uid === undefined) throw "数据项缺少 UID"
-    if (typeof entries[0].uid !== "string")
-      ap(entry, "uid", undefined, 0, "UID 不是字符串")
-    uid = entries[0].uid
-  }
-
-  for (let i = 0, len = entries.length; i < len; i++) {
-    const entry = entries[i]
-    if (typeof entry !== "object") throw `记录条目 ${i} 不是对象`
+  for (const [i, entry] of entries.entries()) {
+    if (typeof entry !== "object") throw `记录项 [${i}] 不是对象`
     ap(entry, "time", datetimeRe, i)
-    "lang" in entry && ap(entry, "lang", "zh-cn", i)
     ap(entry, "rank_type", ["3", "4", "5"], i)
     ap(entry, "gacha_type", ["200", "301", "302", "400"], i)
     typeof entry.id === "string" || ap(entry, "id", undefined, i)
     typeof entry.name === "string" || ap(entry, "name", undefined, i)
 
     onlyProps(entry, entryProps)
+    entry.uigf_gacha_type = toUIGFGachaType(entry.gacha_type)
     entry.time = normalizeTime(entry.time)
   }
+  entries.reverse()
   entries.sort(compareEntries)
-  return true
 
-  function ap(entry, attr, match, i, msg) {
+  function ap(entry, attr, match, i) {
     const val = entry[attr]
-    if (val === undefined) throw `记录条目 ${i} 缺少属性 ${attr}`
+    if (val === undefined) throw `记录项 ${i} 缺少属性 ${attr}`
     let info
     if (match instanceof RegExp) {
       if (typeof val === "string" && match.test(val)) return
@@ -467,8 +440,7 @@ function validateEntries(entries) {
       if (match === val) return
       info = `${quot(val)}，应为${quot(match)}`
     }
-    info = `记录条目 ${i} 的属性 ${attr} 不正确${info ? `：${info}` : ""}`
-    if (msg) throw `${mag}（${info}）`
+    info = `记录项 ${i} 的属性 ${attr} 不正确${info ? `：${info}` : ""}`
     throw info
   }
   function quot(val) {
@@ -478,48 +450,42 @@ function validateEntries(entries) {
   }
 }
 
-function updateSegmentsStatus() {
-  const empty = segments.length === 0
+function updateEntryListStatus() {
+  const empty = entryList.length === 0
   $$$("files-clearbtn").disabled = empty
   $$$("renderbtn").disabled = empty
   $$$("exportbtn").disabled = empty
   if (empty) {
-    entryCount = 0
     $$$("files-status").textContent = "未选择记录"
-    $$$("option-pityinit").textContent = "等待选择记录…"
     return
   }
 
-  entryCount = segments.reduce((sum, seg) => sum + seg.length, 0)
-  const segTimes = segments
-    .map(segment => `从 ${segment[0].time} 到 ${last(segment).time}`)
-    .join("、")
+  const firstTime = entryList[0].time
+  const lastTime = last(entryList).time
+  const status = `已导入 UID ${uid} 从 ${firstTime} 到 ${lastTime} 的 ${entryList.length} 条记录`
 
-  $$$(
-    "files-status"
-  ).textContent = `已导入 UID: ${uid} ${segTimes} 的共 ${entryCount} 条记录`
-  $$$("option-pityinit").textContent = ""
+  $$$("files-status").textContent = status
+}
 
-  const $pilist = document.createDocumentFragment()
-  const $template = $$$("template-pityinit-table").content
-  for (const segment of segments) {
-    if (segment.$pi) {
-      $pilist.appendChild(segment.$pi)
-      continue
-    }
-    const $pi = $E($pilist, "li")
-    segment.$pi = $pi
-    $E($pi, "div", {
-      textContent: segment[0].time,
-    })
-    $pi.appendChild($template.cloneNode(true))
+function importUIGF(data) {
+  const { info, list } = data
+
+  if (info && info.lang && info.lang !== "zh-cn")
+    throw "暂不支持导入简体中文以外语言的记录"
+  if (uid === null) {
+    uid = info?.uid || null
+  } else {
+    if (info && info.uid && info.uid !== uid)
+      throw `只能导入同一账号的记录：已导入记录来自 UID ${uid}，正在导入的记录来自 UID ${info.uid}`
   }
-  $$$("option-pityinit").appendChild($pilist)
+
+  addEntries(list)
 }
 
 function clearEntries() {
-  segments.length = 0
-  updateSegmentsStatus()
+  entryList.length = 0
+  uid = null
+  updateEntryListStatus()
 }
 
 /**
@@ -529,12 +495,19 @@ function findVerHalf(time) {
   return versionHalves.findLast(vs => subtractTime(time, vs.start) >= 0)
 }
 
+/** @type {Banner} */
+const noviceBanner = {
+  label: "新手池",
+  fiveStars: [],
+  fourStars: [],
+}
 /**
  * @param {GachaType} type
  * @param {string} time
  * @returns {Banner}
  */
 function findBanner(type, time) {
+  if (type === "100") return noviceBanner
   const banners = type === "200" ? stdBanners : eventBanners
   time = time.replace(/-/g, "/")
   const banner = banners.findLast(
@@ -564,37 +537,6 @@ function $E(parent, name, o) {
   Object.assign($e, o)
   parent.appendChild($e)
   return $e
-}
-
-/**
- * @param {PityInit} pity
- * @param {{ $pi: Node }} seg
- */
-function pityInit(pity, seg) {
-  const $pi = seg.$pi
-  const inputs = [...$pi.querySelectorAll("input")]
-  for (const type of PityTracker.pityTypes) {
-    const $i = inputs.find($i => $i.name === type)
-    const val = $i.value
-    const numVal = parseInt(val) | 0
-    if (val) pity[`${type}Pity`] = numVal
-    pity[`${type}Uncertain`] = !val
-
-    $i.value = val && numVal
-  }
-}
-/**
- * 用于从保存的合并记录中恢复保底计数器初始化数值。
- * @param {PityInit} pity
- * @param {{ $pi: Node }} seg
- */
-function reversePityInit(pity, seg) {
-  const $pi = seg.$pi
-  const inputs = [...$pi.querySelectorAll("input")]
-  for (const type of PityTracker.pityTypes) {
-    const $i = inputs.find($i => $i.name === type)
-    if (!pity[`${type}Uncertain`]) $i.value = pity[`${type}Pity`]
-  }
 }
 
 function render({ showStd = false } = {}) {
@@ -627,10 +569,10 @@ function render({ showStd = false } = {}) {
   let $time
   /**
    * @param {string} time
-   * @param {string} info
+   * @param {GachaType} type
    * @param {Banner} banner
    */
-  function newTime(time, info, banner) {
+  function newTime(time, type, banner) {
     $time = $E($day, "div", {
       className: "lvl-3",
     })
@@ -639,12 +581,20 @@ function render({ showStd = false } = {}) {
       textContent: time,
     })
 
+    const info = [banner.label]
+
+    if (type >= "301")
+      info.push(`剩余 ${formatDur(subtractTime(banner.end, time))}`)
+
     let tooltip = null
-    if (banner.type >= "301") {
+    if (banner.type !== "100") {
+      info.push(pity.stat(type))
+
       const bannerType = {
         301: "角色池",
         400: "角色池2",
         302: "武器池",
+        200: "常驻池",
       }[banner.type]
       tooltip = bannerType + "\n"
       tooltip += `${banner.start} 至 ${banner.end}\n\n`
@@ -655,10 +605,12 @@ function render({ showStd = false } = {}) {
       tooltip += banner.fiveStars
         .map(n => `${n.padStart(maxChars, "\u3000")} ★★★★★`)
         .join("\n")
-      tooltip += "\n"
-      tooltip += banner.fourStars
-        .map(n => `${n.padStart(maxChars, "\u3000")} ★★★★`)
-        .join("\n")
+      if (banner.fourStars.length) {
+        tooltip += "\n"
+        tooltip += banner.fourStars
+          .map(n => `${n.padStart(maxChars, "\u3000")} ★★★★`)
+          .join("\n")
+      }
     }
 
     $E($header, "div", {
@@ -681,126 +633,113 @@ function render({ showStd = false } = {}) {
   let $threeStars
   let threeStars = 0
 
-  //let segmentIndex = 0
-  pityInit(pity, segments[0])
+  let tenPullIndex = -1
+  let $tenFives, $tenFours, $tenThrees
 
-  for (const seg of segments) {
-    pityInit(pity, seg)
+  for (const [ei, entry] of entryList.entries()) {
+    const type = entry.gacha_type
+    if (type < "301" && !showStd) continue
+    const time = entry.time
 
-    let tenPullIndex = -1
-    let $tenFives, $tenFours, $tenThrees
+    const [date, dayTime] = time.split(" ")
+    const displayTime = dayTime.replace(/:\d\d$/, "")
+    const verHalf = findVerHalf(time)
+    const banner = findBanner(type, time)
 
-    for (const [ei, entry] of seg.entries()) {
-      const type = entry.gacha_type
-      if (type === "200" && !showStd) continue
-      const time = entry.time
-
-      const [date, dayTime] = time.split(" ")
-      const displayTime = dayTime.replace(/:\d\d$/, "")
-      const verHalf = findVerHalf(time)
-      const banner = findBanner(type, time)
-
-      switch (true) {
-        case verHalf !== prevVerHalf:
-          newVerHalf(verHalf)
-        // fallthrough
-        case date !== prevDate:
-          newDay(date)
-        // fallthrough
-        case !(recentTime && subtractTime(time, recentTime) < 300) ||
-          banner !== prevBanner: {
-          const info = [banner.label, pity.stat(type).message]
-          if (type !== "200")
-            info.push(`剩余 ${formatDur(subtractTime(banner.end, time))}`)
-          newTime(displayTime, info.join(" · "), banner)
-          recentTime = time
-          threeStars = 0
-        }
-      }
-      prevVerHalf = verHalf
-      prevDate = date
-      prevTime = time
-      prevBanner = banner
-
-      if (
-        tenPullIndex === -1 &&
-        seg[ei + 9] &&
-        seg[ei + 9].gacha_type === type &&
-        seg[ei + 9].time === time
-      ) {
-        tenPullIndex = 0
+    switch (true) {
+      case verHalf !== prevVerHalf:
+        newVerHalf(verHalf)
+      // fallthrough
+      case date !== prevDate:
+        newDay(date)
+      // fallthrough
+      case !(recentTime && subtractTime(time, recentTime) < 300) ||
+        banner !== prevBanner: {
+        newTime(displayTime, type, banner)
+        recentTime = time
         threeStars = 0
-        const $parent = $E($time, "div", {
-          className: "tenpulls",
-        })
-        $E($parent, "div", {
-          className: "tenpulls-label",
-          textContent: "十连抽",
-        })
-        $tenFives = $E($parent, "div", {
-          className: "tenpulls-items tenpulls-items-5",
-        })
-        $tenFours = $E($parent, "div", {
-          className: "tenpulls-items tenpulls-items-4",
-        })
-        $tenThrees = document.createDocumentFragment()
       }
+    }
+    prevVerHalf = verHalf
+    prevDate = date
+    prevTime = time
+    prevBanner = banner
 
-      const name = entry.name
-      const rarity = entry.rank_type
-      const pityMsg = pity.next(type, name, rarity, banner).message
+    if (
+      tenPullIndex === -1 &&
+      seg[ei + 9] &&
+      seg[ei + 9].gacha_type === type &&
+      seg[ei + 9].time === time
+    ) {
+      tenPullIndex = 0
+      threeStars = 0
+      const $parent = $E($time, "div", {
+        className: "tenpulls",
+      })
+      $E($parent, "div", {
+        className: "tenpulls-label",
+        textContent: "十连抽",
+      })
+      $tenFives = $E($parent, "div", {
+        className: "tenpulls-items tenpulls-items-5",
+      })
+      $tenFours = $E($parent, "div", {
+        className: "tenpulls-items tenpulls-items-4",
+      })
+      $tenThrees = document.createDocumentFragment()
+    }
 
-      const $parent =
-        tenPullIndex !== -1
-          ? { 3: $tenThrees, 4: $tenFours, 5: $tenFives }[rarity]
-          : $time
+    const name = entry.name
+    const rarity = entry.rank_type
+    const pityMsg = pity.next(type, name, rarity, banner).message
 
-      if (threeStars && rarity === "3") {
-        $threeStars.firstElementChild.textContent = `(${++threeStars})`
-      } else {
+    const $parent =
+      tenPullIndex !== -1
+        ? { 3: $tenThrees, 4: $tenFours, 5: $tenFives }[rarity]
+        : $time
+
+    if (threeStars && rarity === "3") {
+      $threeStars.firstElementChild.textContent = `(${++threeStars})`
+    } else {
+      let tooltip = ""
+      if (rarity !== "3") {
         const stars = "★".repeat(+rarity)
-        let tooltip = ""
-        if (rarity !== "3") {
-          tooltip = `${entry.time}\n${entry.name} ${stars}\n${pityMsg}`
-          if (tenPullIndex !== -1)
-            tooltip += `\n十连抽中的第 ${tenPullIndex + 1} 抽`
-        }
+        tooltip = `${entry.time}\n${entry.name} ${stars}\n${pityMsg}`
+        if (tenPullIndex !== -1)
+          tooltip += `\n十连抽中的第 ${tenPullIndex + 1} 抽`
+      }
 
-        const $item = $E($parent, "div", {
-          className: `item item-${rarity} ${tooltip ? "mobiletooltip" : ""}`,
-          title: tooltip,
-          onclick: tooltip && mobileTooltip,
-        })
+      const $item = $E($parent, "div", {
+        className: `item item-${rarity} ${tooltip ? "mobiletooltip" : ""}`,
+        title: tooltip,
+        onclick: tooltip && mobileTooltip,
+      })
+      $E($item, "div", {
+        className: "item-name",
+        textContent: rarity === "3" ? "(1)" : name,
+      })
+      if (rarity === "5") {
         $E($item, "div", {
-          className: "item-name",
-          textContent: rarity === "3" ? "(1)" : name,
+          className: "item-info",
+          textContent: pityMsg,
         })
-        if (rarity === "5") {
-          $E($item, "div", {
-            className: "item-info",
-            textContent: pityMsg,
-          })
-        }
-        if (rarity === "3") {
-          threeStars++
-          $threeStars = $item
-        } else if (tenPullIndex === -1) {
-          threeStars = 0
-        }
       }
+      if (rarity === "3") {
+        threeStars++
+        $threeStars = $item
+      } else if (tenPullIndex === -1) {
+        threeStars = 0
+      }
+    }
 
-      if (tenPullIndex !== -1) {
-        tenPullIndex++
-        if (tenPullIndex === 10) {
-          tenPullIndex = -1
-          if (!$tenFives.firstChild) $tenFives.remove()
-          if (!$tenFours.firstChild) $tenFours.remove()
-          if ($threeStars) $tenFours.appendChild($threeStars)
-          threeStars = 0
-        }
-      }
-    } // end for entry of seg
-  } // end for seg of segments
+    if (tenPullIndex !== -1 && ++tenPullIndex === 10) {
+      tenPullIndex = -1
+      if (!$tenFives.firstChild) $tenFives.remove()
+      if (!$tenFours.firstChild) $tenFours.remove()
+      if ($threeStars) $tenFours.appendChild($threeStars)
+      threeStars = 0
+    }
+  }
 
   const $footinfo = $E($container, "div", {
     className: "footinfo",
@@ -852,19 +791,21 @@ function initialize() {
     }
   }
   $$$("exportbtn").onclick = () => {
+    /** @type {UIGFMergedHistory} */
     const obj = {
-      soulGIGacha: "v1",
-      uid,
-      segments,
-      pityInit: segments.map(seg => {
-        const record = {}
-        pityInit(record, seg)
-        return record
-      }),
+      info: {
+        uid,
+        lang: "zh-cn",
+        export_timestamp: Math.floor(Date.now() / 1000),
+        export_app: "soul.gi.gacha",
+        export_app_version: "0.1",
+        uigf_version: "v2.0"
+      },
+      list: entryList.slice(0).reverse()
     }
     const blob = new Blob([JSON.stringify(obj)], { type: "application/json" })
     const url = URL.createObjectURL(blob)
-    const time = last(last(segments)).time.replace(/\//g, "-")
+    const time = last(entryList).time.replace(/\//g, "-")
     const $link = document.createElement("a")
     $link.href = url
     $link.download = `抽卡记录 ${uid} ${time}.json`
@@ -875,7 +816,7 @@ function initialize() {
     }, 60000)
   }
 
-  updateSegmentsStatus()
+  updateEntryListStatus()
 }
 
 fetch("banners.json")

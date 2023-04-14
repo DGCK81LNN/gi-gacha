@@ -35,8 +35,10 @@ p {
   display: block;
   width: 100%;
   box-sizing: border-box;
-  height: 5em;
+}
+#files-url-log {
   white-space: pre-wrap;
+  overflow-wrap: break-word;
 }
 #section-render {
   margin: 5rem 0;/*
@@ -156,78 +158,55 @@ p {
     </style>
   </head>
   <body>
-    <main>
+    <header>
       <h1 id=h1>
         原神抽卡记录可视化
         <div id=h1-author>by DGCK81LNN (aka 蕾)</div>
       </h1>
-      <section id=section-options class="section">
-        <div id=options-inputs>
-          <fieldset id=optiongroup-files class="optiongroup">
-            <legend>导入抽卡记录</legend>
-            <details>
-              <summary>打开抽卡记录文件</summary>
-              <input type=file id=files-input accept=".json">
-              <p>可以导入 UIGF（统一可交换祈愿记录标准）JSON 格式的记录。</p>
-            </details>
-            <details>
-              <summary>粘贴抽卡分析 URL</summary>
-              <input id=files-url
-                placeholder="https://hk4e-api.mihoyo.com/event/gacha_info/api/getGachaLog?. . .">
-              <p>在此粘贴抽卡分析 URL 来获取抽卡记录。抽卡分析链接的获取方法可参考微信小程序“提瓦特小助手”的<a href="https://mp.weixin.qq.com/s/QkyUqrvGxVuZGpBMMJEKsg">抽卡分析 URL 获取教程</a>。</p>
-            </details>
-            <hr>
-            <div id=files-footer>
-              <span id=files-status>正在加载卡池数据……</span>
-              <button type=button id=files-clearbtn disabled>清空</button>
-            </div>
-          </fieldset>
-          <fieldset id=optiongroup-options class="optiongroup">
-            <legend>选项</legend>
-            <div>
-              <input type=checkbox id=option-showstd>
-              <label for=option-showstd>显示常驻池记录</label>
-            </div>
-            <fieldset hidden><!--TODO: remove-->
-              <legend>初始化保底计数器</legend>
-              <ul id=option-pityinit></ul>
-            </fieldset>
-          </fieldset>
-        </div>
-        <div id=options-footer>
-          <button type=button id=renderbtn disabled>加载</button>
-          <button type=button id=exportbtn disabled>导出合并记录</button>
-        </div>
-      </section>
-      <hr>
-      <section id=section-render class="section">欢迎使用☺️</section>
-      <hr>
-    </main>
+    </header>
+    <section id=section-options class="section">
+      <div id=options-inputs>
+        <fieldset id=optiongroup-files class="optiongroup">
+          <legend>导入抽卡记录</legend>
+          <details>
+            <summary>打开抽卡记录文件</summary>
+            <input type=file id=files-input accept=".json">
+            <p>仅支持 <a href="https://uigf.org/zh/standards/UIGF.html">UIGF</a>（统一可交换祈愿记录标准）v2 JSON 格式的记录。</p>
+          </details>
+          <details>
+            <summary>粘贴抽卡分析 URL</summary>
+            <textarea id=files-url rows=5
+              placeholder="https://hk4e-api.mihoyo.com/event/gacha_info/api/getGachaLog?. . ."
+            ></textarea>
+            <p>在此粘贴抽卡分析 URL 来获取抽卡记录。抽卡分析链接的获取方法可参考微信小程序“提瓦特小助手”的<a href="https://mp.weixin.qq.com/s/QkyUqrvGxVuZGpBMMJEKsg">抽卡分析 URL 获取教程</a>。</p>
+            <button type=button id=files-url-ok>开始获取</button>
+            <div id=files-url-log></div>
+          </details>
+          <hr>
+          <div id=files-footer>
+            <span id=files-status>正在加载卡池数据……</span>
+            <button type=button id=files-clearbtn disabled>清空</button>
+          </div>
+        </fieldset>
+        <fieldset id=optiongroup-options class="optiongroup">
+          <legend>选项</legend>
+          <div>
+            <input type=checkbox id=option-showstd>
+            <label for=option-showstd>显示常驻池、新手池记录</label>
+          </div>
+        </fieldset>
+      </div>
+      <div id=options-footer>
+        <button type=button id=renderbtn disabled>加载</button>
+        <button type=button id=exportbtn disabled>导出合并记录</button>
+      </div>
+    </section>
+    <hr>
+    <section id=section-render class="section">欢迎使用☺️</section>
+    <hr>
     <footer id=section-footer class="section">
       <p>原神抽卡记录可视化 by DGCK81LNN (aka 蕾)</p>
     </footer>
-
-    <!--TODO: remove-->
-    <template id=template-pityinit-table>
-      <table>
-        <tr>
-          <td>角色池抽数</td>
-          <td><input name=char type=number min=0 max=89 step=1></td>
-        </tr>
-        <tr>
-          <td>角色池小保底歪抽数</td>
-          <td><input name=charLost5050 type=number min=0 max=90 step=1></td>
-        </tr>
-        <tr>
-          <td>武器池抽数</td>
-          <td><input name=weapon type=number min=0 max=89 step=1></td>
-        </tr>
-        <tr>
-          <td>常驻池抽数</td>
-          <td><input name=std type=number min=0 max=89 step=1></td>
-        </tr>
-      </table>
-    </template>
 
     <!--<script>
   window.onerror=(...{ [4]: e }) => alert(`${e}\n\n${e.stack}`)
