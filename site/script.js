@@ -705,7 +705,7 @@ function render({ showStd = false } = {}) {
           newVerHalf(verHalf)
         // fallthrough
         case date !== prevDate:
-          newDay(displayDate)
+          newDay(date)
         // fallthrough
         case !(recentTime && subtractTime(time, recentTime) < 300) ||
           banner !== prevBanner: {
