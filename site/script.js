@@ -1,10 +1,24 @@
 const $$$ = document.getElementById.bind(document)
+/**
+ * @template T
+ * @param {T[]} array
+ */
 function last(array) {
   return array[array.length - 1]
 }
+/**
+ * @param {string} time
+ */
 function normalizeTime(time) {
   return time.replace(/-/g, "/")
 }
+/**
+ * @template O
+ * @template {keyof O} K
+ * @param {O} obj
+ * @param {K[]} props
+ * @returns {{ [key in K]: O[K] }}
+ */
 function onlyProps(obj, props) {
   for (const prop in obj) {
     if (!props.includes(prop)) delete obj[prop]
@@ -12,6 +26,55 @@ function onlyProps(obj, props) {
   return obj
 }
 
+/** @typedef {"200" | "301" | "302" | "400"} GachaType */
+/** @typedef {"char" | "weapon" | "std"} GachaTypeName */
+/** @typedef {"char" | "charLost5050" | "weapon" | "std"} PityType */
+/** @typedef {"3" | "4" | "5"} Rarity */
+/**
+ * @typedef {{
+ *   time: string,
+ *   rank_type: Rarity,
+ *   id: string,
+ *   gacha_type: GachaType,
+ *   name: string,
+ * }} GachaEntry
+ */
+/** @typedef {GachaEntry[] & { $pi?: Node }} Segment */
+/**
+ * @typedef {{
+ *   label: string,
+ *   start: string,
+ *   end: string,
+ * }} VersionHalf
+ */
+/**
+ * @typedef {{
+ *   label: string,
+ *   start: string,
+ *   end: string,
+ *   fiveStars: string[],
+ *   fourStars: string[],
+ * }} Banner
+ */
+/**
+ * @typedef {{
+ *   segments: GachaEntry[][],
+ *   pityInit: PityInit,
+ * }} MergedHistoryV1
+ */
+/** @interface */
+class PityInit {
+  /** @type {number}*/ charPity
+  /** @type {number}*/ charLost5050Pity
+  /** @type {number}*/ weaponPity
+  /** @type {number}*/ stdPity
+  /** @type {boolean} */ charUncertain
+  /** @type {boolean} */ charLost5050Uncertain
+  /** @type {boolean} */ weaponUncertain
+  /** @type {boolean} */ stdUncertain
+}
+
+/** @implements {PityInit} */
 class PityTracker {
   constructor() {
     this.charPity = 0
@@ -20,14 +83,18 @@ class PityTracker {
     this.weaponPity = 0
     this.stdPity = 0
     this.charUncertain = true
-    /** 小保底抽数 charLost5050Pity 是否不确定。*/
     this.charLost5050Uncertain = false
     this.weaponUncertain = true
     this.stdUncertain = true
   }
 
+  /** @type {PityType[]} */
   static pityTypes = ["char", "charLost5050", "weapon", "std"]
 
+  /**
+   * @param {GachaType} type
+   * @returns {GachaTypeName}
+   */
   static getGachaTypeName(type) {
     switch (type) {
       case "301":
@@ -42,6 +109,12 @@ class PityTracker {
     }
   }
 
+  /**
+   * @param {GachaType} type
+   * @param {string} name
+   * @param {Rarity} rarity
+   * @param {Banner} banner
+   */
   next(type, name, rarity, banner) {
     const is5Star = rarity === "5"
 
@@ -111,6 +184,9 @@ class PityTracker {
     }
   }
 
+  /**
+   * @param {GachaType} type
+   */
   stat(type) {
     if (type === "301" || type === "400") {
       const pity = this.charPity
@@ -142,20 +218,21 @@ class PityTracker {
       message: `${pity} 抽${uncertain ? "？" : ""}`,
     }
   }
-
-  makeUncertain() {
-    this.charUncertain = true
-    this.weaponUncertain = true
-    this.stdUncertain = true
-  }
 }
 
+/**
+ * @param {string} a
+ * @param {string} b
+ */
 function subtractTime(a, b) {
   if (typeof a === "string") a = Date.parse(a)
   if (typeof b === "string") b = Date.parse(b)
   return (a - b) / 1000
 }
 
+/**
+ * @param {number} d
+ */
 function formatDur(d) {
   const sign = d < 0 ? "-" : ""
   const ad = Math.abs(d)
@@ -178,17 +255,21 @@ const entryProps = Object.freeze([
   "gacha_type",
   "name",
 ])
-const { versionParts, eventBanners } = DATA /*TODO: fetch*/
-/*
-versionParts.forEach((vp, i) => {
-  if (i === 0) return
-  versionParts[i - 1].end = vp.start
-})*/
+/** @type {{ versionHalves: VersionHalf[], eventBanners: Banner[], stdBanners: Banner[] }} */
+var DATA /* TODO */
+let versionHalves
+let eventBanners
+let stdBanners
 
+/** @type {Segment[]} */
 const segments = []
 let entryCount = 0
 let uid = null
 
+/**
+ * @param {GachaEntry} e1
+ * @param {GachaEntry} e2
+ */
 function compareEntries(e1, e2) {
   if (e1.time === e2.time) {
     if (e1.id.length === e2.id.length) {
@@ -200,13 +281,17 @@ function compareEntries(e1, e2) {
   return e1.time > e2.time ? 1 : -1
 }
 
+/**
+ * @param {GachaEntry} entry
+ * @returns {[number, number]}
+ */
 function bisectEntry(entry) {
   let start = 0
   let end = segments.length
   let mid = 0
 
   while (true) {
-    if (start === end) return [start, -1]
+    if (start === end) return [start, 0]
     //_adl()
     mid = ~~((start + end) / 2)
     if (compareEntries(entry, last(segments[mid])) > 0) start = mid + 1
@@ -229,6 +314,10 @@ function bisectEntry(entry) {
   }
 }
 
+/**
+ * @param {GachaEntry[] | MergedHistoryV1} entries
+ * @param {string} [_uid=]
+ */
 function addEntries(entries, _uid) {
   if (entries.soulGIGacha === "v1") {
     entries.segments.forEach((seg, i) => {
@@ -251,7 +340,7 @@ function addEntries(entries, _uid) {
   }
 
   if (_uid) entries[0].uid = _uid
-  validateEntries(entries)
+  if (!validateEntries(entries)) return
 
   //const oldCount = entryCount
   let segmentIndex = 0
@@ -284,34 +373,39 @@ function addEntries(entries, _uid) {
     let i = 0
     const mergedEntries = []
 
-    _adl(1)
+    //_adl(1)
     outer: while (x2 < segments.length) {
-      if (y2 < 0) {
+      /*if (y2 < 0) {
         while (compareEntries(entries[i], segments[x2][0]) < 0) {
           mergedEntries.push(entries[i])
           if (++i === entries.length) break outer
         }
         y2 = 0
-      }
+      }*/
       while (y2 < segments[x2].length) {
-        _adl()
+        //_adl()
         const entry = entries[i]
         const d = compareEntries(entry, segments[x2][y2])
         if (d >= 0) {
           mergedEntries.push(segments[x2][y2++])
+          if (d > 0) continue
         } else {
           mergedEntries.push(entry)
         }
         if (++i === entries.length) break outer
       }
       x2++
-      y2 = -1
+      y2 = 0
     }
 
     return [x1, y1, x2, y2]
   }
 }
 
+/**
+ * @param {unknown} entries
+ * @returns {entries is GachaEntry[]}
+ */
 function validateEntries(entries) {
   if (!Array.isArray(entries)) throw "数据对象不是数组"
   if (entries.length < 1) throw "数据数组为空"
@@ -337,6 +431,7 @@ function validateEntries(entries) {
     entry.time = normalizeTime(entry.time)
   }
   entries.sort(compareEntries)
+  return true
 
   function ap(entry, attr, match, i, msg) {
     const val = entry[attr]
@@ -407,17 +502,22 @@ function clearEntries() {
   updateSegmentsStatus()
 }
 
-function findVerSeg(time) {
-  return versionParts.findLast(vs => subtractTime(time, vs.start) >= 0)
+/**
+ * @param {string} time
+ */
+function findVerHalf(time) {
+  return versionHalves.findLast(vs => subtractTime(time, vs.start) >= 0)
 }
 
-const stdBanner = {
-  label: "常驻池",
-}
+/**
+ * @param {GachaType} type
+ * @param {string} time
+ * @returns {Banner}
+ */
 function findBanner(type, time) {
-  if (type === "200") return stdBanner
+  const banners = type === "200" ? stdBanners : eventBanners
   time = time.replace(/-/g, "/")
-  const banner = eventBanners.findLast(
+  const banner = banners.findLast(
     vs => type === vs.type && subtractTime(time, vs.start) >= 0
   )
   if (!banner) throw "找不到抽卡记录对应的卡池信息"
@@ -430,14 +530,26 @@ function mobileTooltip(event) {
   }
 }
 
+/**
+ * @template P
+ * @template {HTMLElement} T
+ * @param {P} parent
+ * @param {string} name
+ * @param {Partial<T>} o
+ * @returns {P extends Node ? T : unknown}
+ */
 function $E(parent, name, o) {
   if (!(parent instanceof Node)) return parent
-  return Object.assign(
-    parent.appendChild(parent.ownerDocument.createElement(name)),
-    o
-  )
+  const $e = parent.ownerDocument.createElement(name)
+  Object.assign($e, o)
+  parent.appendChild($e)
+  return $e
 }
 
+/**
+ * @param {PityInit} pity
+ * @param {{ $pi: Node }} seg
+ */
 function pityInit(pity, seg) {
   const $pi = seg.$pi
   const inputs = [...$pi.querySelectorAll("input")]
@@ -445,12 +557,17 @@ function pityInit(pity, seg) {
     const $i = inputs.find($i => $i.name === type)
     const val = $i.value
     const numVal = parseInt(val) | 0
-    pity[`${type}Pity`] = numVal
+    if (val) pity[`${type}Pity`] = numVal
     pity[`${type}Uncertain`] = !val
 
     $i.value = val && numVal
   }
 }
+/**
+ * 用于从保存的合并记录中恢复保底计数器初始化数值。
+ * @param {PityInit} pity
+ * @param {{ $pi: Node }} seg
+ */
 function reversePityInit(pity, seg) {
   const $pi = seg.$pi
   const inputs = [...$pi.querySelectorAll("input")]
@@ -463,20 +580,22 @@ function reversePityInit(pity, seg) {
 function render({ showStd = false } = {}) {
   const $container = document.createDocumentFragment()
 
-  let $verSeg
-  function newVerSeg(verSeg) {
-    $verSeg = $E($container, "div", {
+  let $verHalf
+  /** @param {VersionHalf} verHalf */
+  function newverHalf(verHalf) {
+    $verHalf = $E($container, "div", {
       className: "lvl-1",
     })
-    $E($verSeg, "h3", {
+    $E($verHalf, "h3", {
       className: "sticky sticky-1",
-      textContent: verSeg.label,
+      textContent: verHalf.label,
     })
   }
 
   let $day
+  /** @param {string} date */
   function newDay(date) {
-    $day = $E($verSeg, "div", {
+    $day = $E($verHalf, "div", {
       className: "lvl-2",
     })
     $E($day, "h4", {
@@ -486,6 +605,11 @@ function render({ showStd = false } = {}) {
   }
 
   let $time
+  /**
+   * @param {string} time
+   * @param {string} info
+   * @param {Banner} banner
+   */
   function newTime(time, info, banner) {
     $time = $E($day, "div", {
       className: "lvl-3",
@@ -527,118 +651,101 @@ function render({ showStd = false } = {}) {
 
   const pity = new PityTracker()
 
-  const pulls = segments.reduce((acc, seg) => acc.concat(null, seg))
-  const pPulls = []
-  for (let i = 0; i < pulls.length; ) {
-    const entry = pulls[i]
-    if (!entry) break
-    let j = 1
-    while (j <= 9 && i + j < pulls.length) {
-      if (pulls[i + j].time !== entry.time) break
-      if (pulls[i + j].gacha_type !== entry.gacha_type) break
-      j++
-    }
-    if (j === 10) {
-      pPulls.push(pulls.slice(i, i + 10))
-      i += 10
-    } else {
-      pPulls.push(entry)
-      i++
-    }
-  }
-
-  let prevVerSeg = null
+  let prevverHalf = null
   let prevDay = ""
   let recentTime = ""
   let prevTime = ""
   let prevBanner = null
-  //newVerSeg(prevVerSeg)
+  //newverHalf(prevverHalf)
 
   let $threeStars
   let threeStars = 0
 
-  let segmentIndex = 0
+  //let segmentIndex = 0
   pityInit(pity, segments[0])
 
-  for (const item of pPulls) {
-    if (!item) {
-      pityInit(pity, segments[++segmentIndex])
-      continue
-    }
+  let tenPullIndex = -1
 
-    const isTenPull = Array.isArray(item)
-    const entry = isTenPull ? item[0] : item
-    const type = entry.gacha_type
-    if (type === "200" && !showStd) continue
-    const entries = isTenPull ? item : [item]
-    const time = entry.time
-
-    const [day, dayTime] = time.split(" ")
-    const displayTime = dayTime.replace(/:\d\d$/, "")
-    const verSeg = findVerSeg(time)
-    const banner = findBanner(type, time)
-
-    switch (true) {
-      case verSeg !== prevVerSeg:
-        newVerSeg(verSeg)
-      // fallthrough
-      case day !== prevDay:
-        newDay(day)
-      // fallthrough
-      case !(recentTime && subtractTime(time, recentTime) < 300) ||
-        banner !== prevBanner: {
-        const info = [banner.label, pity.stat(type).message]
-        if (type !== "200")
-          info.push(`剩余 ${formatDur(subtractTime(banner.end, time))}`)
-        newTime(displayTime, info.join(" · "), banner)
-        recentTime = time
-        threeStars = 0
-      }
-    }
-    prevVerSeg = verSeg
-    prevDay = day
-    prevTime = time
-    prevBanner = banner
+  for (const seg of segments) {
+    pityInit(pity, seg)
 
     let $tenFives, $tenFours, $tenThrees
-    if (isTenPull) {
-      threeStars = 0
-      const $parent = $E($time, "div", {
-        className: "tenpulls",
-      })
-      $E($parent, "div", {
-        className: "tenpulls-label",
-        textContent: "十连抽",
-      })
-      $tenFives = $E($parent, "div", {
-        className: "tenpulls-items tenpulls-items-5",
-      })
-      $tenFours = $E($parent, "div", {
-        className: "tenpulls-items tenpulls-items-4",
-      })
-      $tenThrees = document.createDocumentFragment()
-    }
 
-    entries.forEach((entry, index) => {
+    for (const [ei, entry] of seg.entries()) {
+      const type = entry.gacha_type
+      if (type === "200" && !showStd) continue
+      const time = entry.time
+
+      const [day, dayTime] = time.split(" ")
+      const displayTime = dayTime.replace(/:\d\d$/, "")
+      const verHalf = findVerHalf(time)
+      const banner = findBanner(type, time)
+
+      switch (true) {
+        case verHalf !== prevverHalf:
+          newverHalf(verHalf)
+        // fallthrough
+        case day !== prevDay:
+          newDay(day)
+        // fallthrough
+        case !(recentTime && subtractTime(time, recentTime) < 300) ||
+          banner !== prevBanner: {
+          const info = [banner.label, pity.stat(type).message]
+          if (type !== "200")
+            info.push(`剩余 ${formatDur(subtractTime(banner.end, time))}`)
+          newTime(displayTime, info.join(" · "), banner)
+          recentTime = time
+          threeStars = 0
+        }
+      }
+      prevverHalf = verHalf
+      prevDay = day
+      prevTime = time
+      prevBanner = banner
+
+      if (
+        tenPullIndex === -1 &&
+        seg[ei + 9] &&
+        seg[ei + 9].type === type &&
+        seg[ei + 9].time === time
+      ) {
+        tenPullIndex = 0
+        threeStars = 0
+        const $parent = $E($time, "div", {
+          className: "tenpulls",
+        })
+        $E($parent, "div", {
+          className: "tenpulls-label",
+          textContent: "十连抽",
+        })
+        $tenFives = $E($parent, "div", {
+          className: "tenpulls-items tenpulls-items-5",
+        })
+        $tenFours = $E($parent, "div", {
+          className: "tenpulls-items tenpulls-items-4",
+        })
+        $tenThrees = document.createDocumentFragment()
+      }
+
       const name = entry.name
       const rarity = entry.rank_type
       const pityMsg = pity.next(type, name, rarity, banner).message
 
-      const $parent = isTenPull
+      const $parent = tenPullIndex
         ? { 3: $tenThrees, 4: $tenFours, 5: $tenFives }[rarity]
         : $time
 
       if (threeStars && rarity === "3") {
         if ($threeStars)
           $threeStars.firstElementChild.textContent = `(${++threeStars})`
-        return
+        continue
       }
 
       const stars = "★".repeat(+rarity)
       let tooltip = ""
       if (rarity !== "3") {
         tooltip = `${entry.time}\n${entry.name} ${stars}\n${pityMsg}`
-        if (isTenPull) tooltip += `\n十连抽中的第 ${index + 1} 抽`
+        if (tenPullIndex !== -1) tooltip += `\n十连抽中的第 ${tenPullIndex} 抽`
       }
 
       const $item = $E($parent, "div", {
@@ -659,16 +766,22 @@ function render({ showStd = false } = {}) {
       if (rarity === "3") {
         threeStars++
         $threeStars = $item
-      } else if (!isTenPull) threeStars = 0
-    })
+      } else if (tenPullIndex === -1) {
+        threeStars = 0
+      }
 
-    if (isTenPull) {
-      if (!$tenFives.firstChild) $tenFives.remove()
-      if (!$tenFours.firstChild) $tenFours.remove()
-      if ($threeStars) $tenFours.appendChild($threeStars)
-      threeStars = 0
-    }
-  }
+      if (tenPullIndex !== -1) {
+        tenPullIndex++
+        if (tenPullIndex === 9) {
+          tenPullIndex = -1
+          if (!$tenFives.firstChild) $tenFives.remove()
+          if (!$tenFours.firstChild) $tenFours.remove()
+          if ($threeStars) $tenFours.appendChild($threeStars)
+          threeStars = 0
+        }
+      }
+    } // end for entry of seg
+  } // end for seg of segments
 
   const $footinfo = $E($container, "div", {
     className: "footinfo",
@@ -691,57 +804,72 @@ function render({ showStd = false } = {}) {
   $wrap.appendChild($container)
 }
 
-$$$("files-input").onchange = async function () {
-  const file = this.files[0]
-  if (!file) return
-  try {
-    const json = await file.text()
-    const entries = JSON.parse(json)
-    const oldEntryCount = entryCount
-    addEntries(entries)
-    alert(`导入成功😋\n新增 ${entryCount - oldEntryCount} 条记录`)
-  } catch (err) {
-    alert(`读取记录出错😭\n${err}`)
-    throw err
+function initialize() {
+  $$$("files-input").onchange = async function () {
+    const file = this.files[0]
+    if (!file) return
+    try {
+      const json = await file.text()
+      const entries = JSON.parse(json)
+      const oldEntryCount = entryCount
+      addEntries(entries)
+      alert(`导入成功😋\n新增 ${entryCount - oldEntryCount} 条记录`)
+    } catch (err) {
+      alert(`读取记录出错😭\n${err}`)
+      throw err
+    }
   }
-}
-$$$("files-clearbtn").onclick = () => {
-  clearEntries()
-}
-$$$("renderbtn").onclick = () => {
-  try {
-    render({
-      showStd: $$$("option-showstd").checked,
-    })
-  } catch (err) {
-    alert(`加载出错😭\n${err}`)
-    throw err
+  $$$("files-clearbtn").onclick = () => {
+    clearEntries()
   }
-}
-$$$("exportbtn").onclick = () => {
-  const obj = {
-    soulGIGacha: "v1",
-    uid,
-    segments,
-    pityInit: segments.map(seg => {
-      const record = {}
-      pityInit(record, seg)
-      return record
-    }),
+  $$$("renderbtn").onclick = () => {
+    try {
+      render({
+        showStd: $$$("option-showstd").checked,
+      })
+    } catch (err) {
+      alert(`加载出错😭\n${err}`)
+      throw err
+    }
   }
-  const blob = new Blob([JSON.stringify(obj)], { type: "application/json" })
-  const url = URL.createObjectURL(blob)
-  const $link = document.createElement("a")
-  $link.href = url
-  $link.download = `抽卡记录 ${last(last(segments)).time.replace(
-    /\//g,
-    "-"
-  )}.json`
-  $link.click()
+  $$$("exportbtn").onclick = () => {
+    const obj = {
+      soulGIGacha: "v1",
+      uid,
+      segments,
+      pityInit: segments.map(seg => {
+        const record = {}
+        pityInit(record, seg)
+        return record
+      }),
+    }
+    const blob = new Blob([JSON.stringify(obj)], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const $link = document.createElement("a")
+    $link.href = url
+    $link.download = `抽卡记录 ${last(last(segments)).time.replace(
+      /\//g,
+      "-"
+    )}.json`
+    $link.click()
 
-  setTimeout(() => {
-    URL.revokeObjectURL(url)
-  }, 60000)
+    setTimeout(() => {
+      URL.revokeObjectURL(url)
+    }, 60000)
+  }
+
+  updateSegmentsStatus()
 }
 
-updateSegmentsStatus()
+fetch("banners.json")
+  .then(resp => resp.text())
+  .then(JSON.parse)
+  .then(data => {
+    ;({ versionHalves, eventBanners, stdBanners } = data)
+    initialize()
+  })
+  .catch(err => {
+    $$$("files-status").textContent = "加载失败，刷新页面？"
+    alert(`加载卡池数据失败😭\n${err}`)
+    throw err
+  })
