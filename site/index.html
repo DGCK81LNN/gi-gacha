@@ -31,6 +31,13 @@ p {
 .section {
   padding: 0.5rem;
 }
+#files-url {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  height: 5em;
+  white-space: pre-wrap;
+}
 #section-render {
   margin: 5rem 0;/*
   box-shadow: 0 0 2rem 2rem var(--bg);
@@ -156,27 +163,36 @@ p {
       </h1>
       <section id=section-options class="section">
         <div id=options-inputs>
-          <div id=optiongroup-files class="optiongroup">
-            <div>
-              <label for=files-input>导入抽卡记录：</label>
+          <fieldset id=optiongroup-files class="optiongroup">
+            <legend>导入抽卡记录</legend>
+            <details>
+              <summary>打开抽卡记录文件</summary>
               <input type=file id=files-input accept=".json">
-            </div>
+              <p>可以导入 UIGF（统一可交换祈愿记录标准）JSON 格式的记录。</p>
+            </details>
+            <details>
+              <summary>粘贴抽卡分析 URL</summary>
+              <input id=files-url
+                placeholder="https://hk4e-api.mihoyo.com/event/gacha_info/api/getGachaLog?. . .">
+              <p>在此粘贴抽卡分析 URL 来获取抽卡记录。抽卡分析链接的获取方法可参考微信小程序“提瓦特小助手”的<a href="https://mp.weixin.qq.com/s/QkyUqrvGxVuZGpBMMJEKsg">抽卡分析 URL 获取教程</a>。</p>
+            </details>
+            <hr>
             <div id=files-footer>
               <span id=files-status>正在加载卡池数据……</span>
               <button type=button id=files-clearbtn disabled>清空</button>
             </div>
-          </div>
-          <div id=optiongroup-options class="optiongroup">
-            <div>选项：</div>
+          </fieldset>
+          <fieldset id=optiongroup-options class="optiongroup">
+            <legend>选项</legend>
             <div>
               <input type=checkbox id=option-showstd>
               <label for=option-showstd>显示常驻池记录</label>
             </div>
-            <fieldset>
+            <fieldset hidden><!--TODO: remove-->
               <legend>初始化保底计数器</legend>
               <ul id=option-pityinit></ul>
             </fieldset>
-          </div>
+          </fieldset>
         </div>
         <div id=options-footer>
           <button type=button id=renderbtn disabled>加载</button>
@@ -191,6 +207,7 @@ p {
       <p>原神抽卡记录可视化 by DGCK81LNN (aka 蕾)</p>
     </footer>
 
+    <!--TODO: remove-->
     <template id=template-pityinit-table>
       <table>
         <tr>

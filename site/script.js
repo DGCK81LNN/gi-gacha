@@ -27,6 +27,7 @@ function onlyProps(obj, props) {
 }
 
 /** @typedef {"200" | "301" | "302" | "400"} GachaType */
+/** @typedef {"200" | "301" | "302"} UIGFGachaType */
 /** @typedef {"char" | "weapon" | "std"} GachaTypeName */
 /** @typedef {"char" | "charLost5050" | "weapon" | "std"} PityType */
 /** @typedef {"3" | "4" | "5"} Rarity */
@@ -37,6 +38,7 @@ function onlyProps(obj, props) {
  *   id: string,
  *   gacha_type: GachaType,
  *   name: string,
+ *   uigf_gacha_type: UIGFGachaType,
  * }} GachaEntry
  */
 /** @typedef {GachaEntry[] & { $pi?: Node }} Segment */
@@ -58,16 +60,31 @@ function onlyProps(obj, props) {
  */
 /**
  * @typedef {{
+ *   soulGIGacha: "v1",
+ *   uid: string,
  *   segments: GachaEntry[][],
  *   pityInit: PityInit,
  * }} MergedHistoryV1
  */
+/**
+ * @typedef {{
+ *   info: {
+ *     uid: string,
+ *     lang: string,
+ *     export_timestamp?: number,
+ *     export_app?: string,
+ *     export_app_version?: string,
+ *     uigf_version?: string,
+ *   },
+ *   list: GachaEntry[],
+ * }} UIGFMergedHistory
+ */
 /** @interface */
 class PityInit {
-  /** @type {number}*/ charPity
-  /** @type {number}*/ charLost5050Pity
-  /** @type {number}*/ weaponPity
-  /** @type {number}*/ stdPity
+  /** @type {number} */ charPity
+  /** @type {number} */ charLost5050Pity
+  /** @type {number} */ weaponPity
+  /** @type {number} */ stdPity
   /** @type {boolean} */ charUncertain
   /** @type {boolean} */ charLost5050Uncertain
   /** @type {boolean} */ weaponUncertain
@@ -255,10 +272,11 @@ const entryProps = Object.freeze([
   "gacha_type",
   "name",
 ])
-/** @type {{ versionHalves: VersionHalf[], eventBanners: Banner[], stdBanners: Banner[] }} */
-var DATA /* TODO */
+/** @type {VersionHalf[]} */
 let versionHalves
+/** @type {Banner[]} */
 let eventBanners
+/** @type {Banner[]} */
 let stdBanners
 
 /** @type {Segment[]} */
@@ -319,6 +337,7 @@ function bisectEntry(entry) {
  * @param {string} [_uid=]
  */
 function addEntries(entries, _uid) {
+  // TODO: switch to UIGF.J format
   if (entries.soulGIGacha === "v1") {
     entries.segments.forEach((seg, i) => {
       let newSegI
@@ -348,14 +367,14 @@ function addEntries(entries, _uid) {
   if (segments.length === 0) {
     segments.push(entries)
   } else {
-    const [x1, y1, x2, y2] = findOverlap(entries)
-    const pre =
-      x1 === segments.length || y1 < 0 ? [] : segments[x1].slice(0, y1)
-    const post = x2 === segments.length || y2 < 0 ? [] : segments[x2].slice(y2)
+    const [x1, y1, x2, y2, mergedEntries] = findOverlap(entries)
+    const pre = (segments[x1] || []).slice(0, y1)
+    const post = (segments[x2] || []).slice(y2)
     const start = x1
-    const end = y2 < 0 ? x2 : x2 + 1
-    const replacement = [].concat(pre, entries, post)
-    if (!pre.length) replacement.$pi = entries.$pi
+    const end = x2 + 1
+    const replacement = [].concat(pre, mergedEntries, post)
+    if (!pre.length && compareEntries(mergedEntries[0], entries[0]) === 0)
+      replacement.$pi = entries.$pi
     segments.splice(start, end - start, replacement)
     segmentIndex = x1
   }
@@ -363,6 +382,10 @@ function addEntries(entries, _uid) {
   updateSegmentsStatus()
   return segmentIndex
 
+  /**
+   * @param {GachaEntry[]} entries
+   * @returns {[number, number, number, number, GachaEntry[]]}
+   */
   function findOverlap(entries) {
     //const start = bisectEntry(entries[0])
     //if (!start)
@@ -375,13 +398,6 @@ function addEntries(entries, _uid) {
 
     //_adl(1)
     outer: while (x2 < segments.length) {
-      /*if (y2 < 0) {
-        while (compareEntries(entries[i], segments[x2][0]) < 0) {
-          mergedEntries.push(entries[i])
-          if (++i === entries.length) break outer
-        }
-        y2 = 0
-      }*/
       while (y2 < segments[x2].length) {
         //_adl()
         const entry = entries[i]
@@ -397,8 +413,12 @@ function addEntries(entries, _uid) {
       x2++
       y2 = 0
     }
+    if (y2 === 0 && x2 > x1) {
+      x2--
+      y2 = segments[x2].length
+    }
 
-    return [x1, y1, x2, y2]
+    return [x1, y1, x2, y2, mergedEntries]
   }
 }
 
@@ -845,12 +865,10 @@ function initialize() {
     }
     const blob = new Blob([JSON.stringify(obj)], { type: "application/json" })
     const url = URL.createObjectURL(blob)
+    const time = last(last(segments)).time.replace(/\//g, "-")
     const $link = document.createElement("a")
     $link.href = url
-    $link.download = `抽卡记录 ${last(last(segments)).time.replace(
-      /\//g,
-      "-"
-    )}.json`
+    $link.download = `抽卡记录 ${uid} ${time}.json`
     $link.click()
 
     setTimeout(() => {
