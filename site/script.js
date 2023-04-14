@@ -751,43 +751,43 @@ function render({ showStd = false } = {}) {
       const rarity = entry.rank_type
       const pityMsg = pity.next(type, name, rarity, banner).message
 
-      const $parent = tenPullIndex !== -1
-        ? { 3: $tenThrees, 4: $tenFours, 5: $tenFives }[rarity]
-        : $time
+      const $parent =
+        tenPullIndex !== -1
+          ? { 3: $tenThrees, 4: $tenFours, 5: $tenFives }[rarity]
+          : $time
 
       if (threeStars && rarity === "3") {
-        //if ($threeStars)
         $threeStars.firstElementChild.textContent = `(${++threeStars})`
-        continue
-      }
+      } else {
+        const stars = "★".repeat(+rarity)
+        let tooltip = ""
+        if (rarity !== "3") {
+          tooltip = `${entry.time}\n${entry.name} ${stars}\n${pityMsg}`
+          if (tenPullIndex !== -1)
+            tooltip += `\n十连抽中的第 ${tenPullIndex + 1} 抽`
+        }
 
-      const stars = "★".repeat(+rarity)
-      let tooltip = ""
-      if (rarity !== "3") {
-        tooltip = `${entry.time}\n${entry.name} ${stars}\n${pityMsg}`
-        if (tenPullIndex !== -1) tooltip += `\n十连抽中的第 ${tenPullIndex + 1} 抽`
-      }
-
-      const $item = $E($parent, "div", {
-        className: `item item-${rarity} ${tooltip ? "mobiletooltip" : ""}`,
-        title: tooltip,
-        onclick: tooltip && mobileTooltip,
-      })
-      $E($item, "div", {
-        className: "item-name",
-        textContent: rarity === "3" ? "(1)" : name,
-      })
-      if (rarity === "5") {
-        $E($item, "div", {
-          className: "item-info",
-          textContent: pityMsg,
+        const $item = $E($parent, "div", {
+          className: `item item-${rarity} ${tooltip ? "mobiletooltip" : ""}`,
+          title: tooltip,
+          onclick: tooltip && mobileTooltip,
         })
-      }
-      if (rarity === "3") {
-        threeStars++
-        $threeStars = $item
-      } else if (tenPullIndex === -1) {
-        threeStars = 0
+        $E($item, "div", {
+          className: "item-name",
+          textContent: rarity === "3" ? "(1)" : name,
+        })
+        if (rarity === "5") {
+          $E($item, "div", {
+            className: "item-info",
+            textContent: pityMsg,
+          })
+        }
+        if (rarity === "3") {
+          threeStars++
+          $threeStars = $item
+        } else if (tenPullIndex === -1) {
+          threeStars = 0
+        }
       }
 
       if (tenPullIndex !== -1) {
