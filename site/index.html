@@ -1,0 +1,231 @@
+<!DOCTYPE HTML>
+<html lang="zh-cmn-Hans">
+  <head>
+    <meta charset="UTF-8">
+    <title>原神抽卡记录可视化</title>
+    <meta name=viewport content="width=device-width, initial-scale=1">
+    <meta name=format-detection content="telephone=no">
+    <!--<link rel=stylesheet href="https://dgck81lnn.github.io/bootstrap-lnn/dist/bootstrap-lnn.min.css"><!--
+    <script defer src="https://dgck81lnn.github.io/bootstrap-lnn/dist/bootstrap.bundle.min.js"></script>-->
+<style>
+:root {
+  --bg: black;
+  --fg: white;
+  background-color: var(--bg);
+  color: var(--fg);
+}
+body {
+  margin: 0;
+}
+p {
+  margin: 0 0 0.5rem;
+}
+#h1 {
+  margin: 0.5rem;
+  text-align: center;
+}
+#h1-author {
+  font-size: 1rem;
+  font-weight: normal;
+}
+.section {
+  padding: 0.5rem;
+}
+#section-render {
+  margin: 5rem 0;/*
+  box-shadow: 0 0 2rem 2rem var(--bg);
+  box-sizing: border-box;
+  min-height: 100vh;*/
+}
+#section-footer {
+  text-align: center;
+}
+
+.optiongroup {
+  margin: 0 0 1rem;
+}
+
+.sticky {
+  margin: 0 -0.5rem;
+  box-shadow: 0 0.125rem 0.125rem black;
+  position: sticky;
+  line-height: 1.2em;
+  background: var(--bg);
+  font-size: 1rem;
+  text-align: center;
+}
+.sticky-1 {
+  font-size: 1.5rem;
+  height: 1.2em;
+  top: 0rem;
+  z-index: 9;
+}
+.sticky-2 {
+  font-size: 1.25rem;
+  font-weight: normal;
+  height: 1.2em;
+  top: 1.8rem;
+  z-index: 8;
+}
+.lvl-3 {
+  margin-bottom: 3rem;
+}
+.sticky-3 {
+  font-size: 1rem;
+  font-weight: normal;
+  top: 3.3rem;
+  z-index: 7;
+  margin-bottom: 0.25rem;
+}
+.bannertime {
+  font-size: 0.875rem;
+  opacity: 0.75;
+}
+
+.ph {
+  margin-bottom: 0.5rem;
+}
+
+.item {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+.item-name {
+  text-shadow: 0.0625em 0.0625em 0.125em
+}
+.item-3 > .item-name {
+  font-size: 0.8rem;
+  color: #AACCFF;
+}
+.item-4 > .item-name {
+  font-size: 1.5rem;
+  color: #FFAAFF;
+}
+.item-5 {
+  background-color: rgba(255, 221, 170, 0.4);
+  border-radius: 0.375rem;
+  box-shadow: 0 0 1rem 0.25rem rgba(255, 221, 170, 0.4);
+  margin-top: 0.5rem;
+  padding: 0.25rem;
+}
+.item-5 > .item-name {
+  font-size: 2.5rem;
+  color: #FFDDAA;
+}
+.item-info {
+  opacity: 0.75;
+}
+.footinfo {
+  opacity: 0.75;
+  text-align: center;
+}
+
+.tenpulls {
+  border: 1px solid var(--fg);
+  margin: 0 0 0.5rem;
+  border-radius: 0.375rem;
+  padding-bottom: 0.5rem;
+}
+.tenpulls-items {
+  margin: 0 0.5rem;
+}
+.tenpulls-items-4 {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.tenpulls-items-4 > .item {
+  margin: 0 0.5rem;
+}
+
+.mobiletooltip[title]:not([title=""]):hover {
+  outline: 2px dashed gold;
+}
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1 id=h1>
+        原神抽卡记录可视化
+        <div id=h1-author>by DGCK81LNN (aka 蕾)</div>
+      </h1>
+      <section id=section-options class="section">
+        <div id=options-inputs>
+          <div id=optiongroup-files class="optiongroup">
+            <div>
+              <label for=files-input>导入抽卡记录：</label>
+              <input type=file id=files-input accept=".json">
+            </div>
+            <div id=files-footer>
+              <span id=files-status>未选择记录</span>
+              <button type=button id=files-clearbtn disabled>清空</button>
+            </div>
+          </div>
+          <div id=optiongroup-options class="optiongroup">
+            <div>选项：</div>
+            <div>
+              <input type=checkbox id=option-showstd>
+              <label for=option-showstd>显示常驻池记录</label>
+            </div>
+            <fieldset>
+              <legend>初始化保底计数器</legend>
+              <ul id=option-pityinit>等待选择记录…</ul>
+            </fieldset>
+          </div>
+        </div>
+        <div id=options-footer>
+          <button type=button id=renderbtn disabled>加载</button>
+          <button type=button id=exportbtn disabled>导出合并记录</button>
+        </div>
+      </section>
+      <hr>
+      <section id=section-render class="section">欢迎使用☺️</section>
+      <hr>
+    </main>
+    <footer id=section-footer class="section">
+      <p>原神抽卡记录可视化 by DGCK81LNN (aka 蕾)</p>
+    </footer>
+
+    <template id=template-pityinit-table>
+      <table>
+        <tr>
+          <td>角色池抽数</td>
+          <td><input name=char type=number min=0 max=89 step=1></td>
+        </tr>
+        <tr>
+          <td>角色池小保底歪抽数</td>
+          <td><input name=charLost5050 type=number min=0 max=90 step=1></td>
+        </tr>
+        <tr>
+          <td>武器池抽数</td>
+          <td><input name=weapon type=number min=0 max=89 step=1></td>
+        </tr>
+        <tr>
+          <td>常驻池抽数</td>
+          <td><input name=std type=number min=0 max=89 step=1></td>
+        </tr>
+      </table>
+    </template>
+
+    <!--<script>
+  window.onerror=(...{ [4]: e }) => alert(`${e}\n\n${e.stack}`)
+  var _adl = function fun(r) {
+    const s = new Error().stack
+    const t = performance.now()
+    if (!r && fun.s && s === fun.s && t - fun.n < 100) {
+      if (t - fun.t > 2000) throw new Error("loop has been running for more than 2 secs")
+    } else {
+      fun.s = s
+      fun.t = t
+    }
+    fun.n = t
+  }
+    </script>-->
+    <script src="script.js"></script>
+  </body>
+</html>
