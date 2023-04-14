@@ -725,7 +725,7 @@ function render({ showStd = false } = {}) {
       if (
         tenPullIndex === -1 &&
         seg[ei + 9] &&
-        seg[ei + 9].type === type &&
+        seg[ei + 9].gacha_type === type &&
         seg[ei + 9].time === time
       ) {
         tenPullIndex = 0
@@ -744,8 +744,6 @@ function render({ showStd = false } = {}) {
           className: "tenpulls-items tenpulls-items-4",
         })
         $tenThrees = document.createDocumentFragment()
-      } else {
-        $time.append(` [LOG] ${JSON.stringify({type,time,ei,segeip9:seg[ei+9]})}`)
       }
 
       const name = entry.name
