@@ -728,7 +728,6 @@ function render({ showStd = false } = {}) {
         seg[ei + 9].gacha_type === type &&
         seg[ei + 9].time === time
       ) {
-        $time.append("[LOG] tenpull init ")
         tenPullIndex = 0
         threeStars = 0
         const $parent = $E($time, "div", {
@@ -794,7 +793,6 @@ function render({ showStd = false } = {}) {
         tenPullIndex++
         if (tenPullIndex === 10) {
           tenPullIndex = -1
-          $time.append("[LOG] tenpull end ")
           if (!$tenFives.firstChild) $tenFives.remove()
           if (!$tenFours.firstChild) $tenFours.remove()
           if ($threeStars) $tenFours.appendChild($threeStars)
