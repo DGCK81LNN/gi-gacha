@@ -10,7 +10,7 @@ function last(array) {
  * @param {string} time
  */
 function normalizeTime(time) {
-  return time.replace(/-/g, "/")
+  return time.replace(/\//g, "-")
 }
 /**
  * @template O
@@ -602,7 +602,7 @@ function render({ showStd = false } = {}) {
 
   let $verHalf
   /** @param {VersionHalf} verHalf */
-  function newverHalf(verHalf) {
+  function newVerHalf(verHalf) {
     $verHalf = $E($container, "div", {
       className: "lvl-1",
     })
@@ -620,7 +620,7 @@ function render({ showStd = false } = {}) {
     })
     $E($day, "h4", {
       className: "sticky sticky-2",
-      textContent: date,
+      textContent: date.replace(/-/g, "/"),
     })
   }
 
@@ -671,12 +671,12 @@ function render({ showStd = false } = {}) {
 
   const pity = new PityTracker()
 
-  let prevverHalf = null
+  let prevVerHalf = null
   let prevDay = ""
   let recentTime = ""
   let prevTime = ""
   let prevBanner = null
-  //newverHalf(prevverHalf)
+  //newVerHalf(prevVerHalf)
 
   let $threeStars
   let threeStars = 0
@@ -684,11 +684,10 @@ function render({ showStd = false } = {}) {
   //let segmentIndex = 0
   pityInit(pity, segments[0])
 
-  let tenPullIndex = -1
-
   for (const seg of segments) {
     pityInit(pity, seg)
 
+    let tenPullIndex = -1
     let $tenFives, $tenFours, $tenThrees
 
     for (const [ei, entry] of seg.entries()) {
@@ -696,17 +695,17 @@ function render({ showStd = false } = {}) {
       if (type === "200" && !showStd) continue
       const time = entry.time
 
-      const [day, dayTime] = time.split(" ")
+      const [date, dayTime] = time.split(" ")
       const displayTime = dayTime.replace(/:\d\d$/, "")
       const verHalf = findVerHalf(time)
       const banner = findBanner(type, time)
 
       switch (true) {
-        case verHalf !== prevverHalf:
-          newverHalf(verHalf)
+        case verHalf !== prevVerHalf:
+          newVerHalf(verHalf)
         // fallthrough
-        case day !== prevDay:
-          newDay(day)
+        case date !== prevDate:
+          newDay(displayDate)
         // fallthrough
         case !(recentTime && subtractTime(time, recentTime) < 300) ||
           banner !== prevBanner: {
@@ -718,8 +717,8 @@ function render({ showStd = false } = {}) {
           threeStars = 0
         }
       }
-      prevverHalf = verHalf
-      prevDay = day
+      prevVerHalf = verHalf
+      prevDate = date
       prevTime = time
       prevBanner = banner
 
@@ -751,13 +750,13 @@ function render({ showStd = false } = {}) {
       const rarity = entry.rank_type
       const pityMsg = pity.next(type, name, rarity, banner).message
 
-      const $parent = tenPullIndex
+      const $parent = tenPullIndex !== -1
         ? { 3: $tenThrees, 4: $tenFours, 5: $tenFives }[rarity]
         : $time
 
       if (threeStars && rarity === "3") {
-        if ($threeStars)
-          $threeStars.firstElementChild.textContent = `(${++threeStars})`
+        //if ($threeStars)
+        $threeStars.firstElementChild.textContent = `(${++threeStars})`
         continue
       }
 
@@ -765,7 +764,7 @@ function render({ showStd = false } = {}) {
       let tooltip = ""
       if (rarity !== "3") {
         tooltip = `${entry.time}\n${entry.name} ${stars}\n${pityMsg}`
-        if (tenPullIndex !== -1) tooltip += `\n十连抽中的第 ${tenPullIndex} 抽`
+        if (tenPullIndex !== -1) tooltip += `\n十连抽中的第 ${tenPullIndex + 1} 抽`
       }
 
       const $item = $E($parent, "div", {
