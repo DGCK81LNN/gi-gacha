@@ -709,9 +709,9 @@ function initialize() {
     try {
       const json = await file.text()
       const entries = JSON.parse(json)
-      const oldEntryCount = entryCount
-      addEntries(entries)
-      alert(`导入成功😋\n新增 ${entryCount - oldEntryCount} 条记录`)
+      const oldEntryCount = entryList.length
+      importUIGF(entries)
+      alert(`导入成功😋\n新增 ${entryList.length - oldEntryCount} 条记录`)
     } catch (err) {
       alert(`读取记录出错😭\n${err}`)
       throw err
