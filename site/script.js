@@ -892,7 +892,7 @@ function initialize() {
         export_timestamp: Math.floor(Date.now() / 1000),
         export_app: "soul.gi.gacha",
         export_app_version: "0.1",
-        uigf_version: "v2.0",
+        uigf_version: "v2.2",
       },
       list: entryList.slice(0).reverse(),
     }
