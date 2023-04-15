@@ -638,22 +638,23 @@ function render({ showStd = false } = {}) {
   let $time
   /**
    * @param {string} time
+   * @param {string} datetime
    * @param {GachaType} type
    * @param {Banner} banner
    */
-  function newTime(time, type, banner) {
+  function newTime(time, datetime, type, banner) {
     $time = $E($day, "div", {
       className: "lvl-3",
     })
     const $header = $E($time, "h5", {
       className: "sticky sticky-3",
-      textContent: time,
+      textContent: time.replace(/:\d\d$/, ""),
     })
 
     const info = [banner.label]
 
     if (type >= "301")
-      info.push(`剩余 ${formatDur(subtractTime(banner.end, time))}`)
+      info.push(`剩余 ${formatDur(subtractTime(banner.end, datetime))}`)
 
     let tooltip = null
     if (banner.type !== "100") {
@@ -711,7 +712,6 @@ function render({ showStd = false } = {}) {
     const time = entry.time
 
     const [date, dayTime] = time.split(" ")
-    const displayTime = dayTime.replace(/:\d\d$/, "")
     const verHalf = findVerHalf(time)
     const banner = findBanner(type, time)
 
@@ -724,7 +724,7 @@ function render({ showStd = false } = {}) {
       // fallthrough
       case !(recentTime && subtractTime(time, recentTime) < 300) ||
         banner !== prevBanner: {
-        newTime(displayTime, type, banner)
+        newTime(dayTime, time, type, banner)
         recentTime = time
         threeStars = 0
       }
