@@ -378,9 +378,7 @@ function mergeEntries(newEntries) {
   let tailEntries
 
   let newI = 0
-  _adl(1)
   while (true) {
-    _adl()
     const newEntry = newEntries[newI]
     const existingEntry = entryList[existingI]
 
@@ -402,7 +400,7 @@ function mergeEntries(newEntries) {
   }
 
   mergedEntries = mergedEntries.concat(tailEntries)
-  return mergeEntries
+  return mergedEntries
 }
 
 function updateEntryListStatus() {
