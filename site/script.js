@@ -1,4 +1,4 @@
-const $$$ = document.getElementById.bind(document)
+const $$$ = id => document.getElementById(id)
 /**
  * @template T
  * @param {T[]} array
@@ -435,6 +435,112 @@ function importUIGF(data) {
   addEntries(list)
 }
 
+/**
+ * @param {string} str
+ * @param {string} key
+ */
+function findSearchParam(str, key) {
+  const re = new RegExp(String.raw`(?:^|[?&])${key}=([^&]*)`)
+  const match = str.match(re)
+  return match ? decodeURIComponent(match[1]) : undefined
+}
+
+/** @param {Record<string, string>} record */
+function makeQueryString(record) {
+  return Object.entries(record)
+    .map(e => e.map(encodeURIComponent).join("="))
+    .join("&")
+}
+
+/**
+ * @param {string} urlStr
+ */
+async function fetchEntries(urlStr) {
+  const perPage = 20
+  const neededParams = [
+    "authkey_ver",
+    "sign_type",
+    "auth_appid",
+    "region",
+    "authkey",
+  ]
+  /** @type {[UIGFGachaType, string][]} */
+  const types = [
+    ["301", "角色"],
+    ["302", "武器"],
+    ["100", "新手"],
+    ["200", "常驻"],
+  ]
+
+  /** @type {Record<string, string>} */
+  let params = {}
+  for (const key of neededParams) {
+    const val = findSearchParam(urlStr, key)
+    if (!val) throw `输入网址中缺少参数 ${key}`
+    params[key] = val
+  }
+  params.lang = "zh-cn"
+  params.size = perPage
+
+  const host =
+    urlStr.includes("hoyoverse") || params.region.startsWith("os")
+      ? "hk4e-api-os.hoyoverse.com"
+      : "hk4e-api.mihoyo.com"
+  const baseURL = `proxy.php?https://${host}/event/gacha_info/api/getGachaLog`
+
+  /** @type {GachaEntry[][]} */
+  const pages = []
+  for (const [type, typeName] of types) {
+    let next = ""
+    let page = 1
+
+    params.gacha_type = type
+    while (true) {
+      params.page = page
+      params.end_id = next
+      log(`${typeName}池 第 ${page} 页…`)
+
+      const resp = await fetch(`${baseURL}?${makeQueryString(params)}`)
+      const json = await resp.text()
+      /**
+       * @type {{
+       *   retcode: number,
+       *   message: string,
+       *   data: { list: GachaEntry[] } | null,
+       * }}
+       */
+      let obj
+      try {
+        obj = JSON.parse(json)
+      } catch (e) {
+        if (resp.status >= 400) throw `HTTP ${resp.status} ${resp.statusText}`
+        throw e
+      }
+      if (!obj.data)
+        throw `${obj.message || "未知错误"}（错误码 ${obj.retcode}）`
+      const list = obj.data.list
+      pages.push(list)
+
+      if (list.length < perPage) break
+      next = last(list).id
+      page++
+    }
+  }
+
+  const list = Array.prototype.concat(...pages)
+  if (list.length === 0) throw "查询结果全为空"
+
+  list.reverse()
+  list.sort((a, b) => (a.time > b.time ? 1 : a.time < b.time ? -1 : 0))
+  importUIGF({
+    info: {
+      uid: list[0].uid,
+      lang: "zh-cn",
+    },
+    list,
+  })
+}
+
 function clearEntries() {
   entryList.length = 0
   uid = null
@@ -730,6 +836,17 @@ function initialize() {
       throw err
     }
   }
+  $$$("files-url-okbtn").onclick = async function () {
+    this.disabled = true
+    try {
+      await fetchEntries($$$("files-url").value)
+    } catch (err) {
+      alert(`获取出错😭\n${err}`)
+      throw err
+    } finally {
+      this.disabled = false
+    }
+  }
   $$$("files-clearbtn").onclick = () => {
     clearEntries()
   }
@@ -758,7 +875,7 @@ function initialize() {
     }
     const blob = new Blob([JSON.stringify(obj)], { type: "application/json" })
     const url = URL.createObjectURL(blob)
-    const time = last(entryList).time.replace(/\//g, "-")
+    const time = last(entryList).time
     const $link = document.createElement("a")
     $link.href = url
     $link.download = `抽卡记录 ${uid} ${time}.json`
