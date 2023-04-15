@@ -225,12 +225,18 @@ class PityTracker {
 }
 
 /**
- * @param {string} a
- * @param {string} b
+ * @param {string} aa
+ * @param {string} bb
  */
-function subtractTime(a, b) {
-  if (typeof a === "string") a = Date.parse(a)
-  if (typeof b === "string") b = Date.parse(b)
+function subtractTime(aa, bb) {
+  let a = aa
+  let b = bb
+  if (a.length <= 10) a += " 00:00"
+  if (b.length <= 10) b += " 00:00"
+  a = Date.parse(a)
+  b = Date.parse(b)
+  if (isNaN(a)) throw `subtractTime: 左操作数（${aa}）无法解析`
+  if (isNaN(b)) throw `subtractTime: 右操作数（${bb}）无法解析`
   return (a - b) / 1000
 }
 
@@ -556,7 +562,7 @@ function clearEntries() {
  * @param {string} time
  */
 function findVerHalf(time) {
-  return versionHalves.findLast(vs => subtractTime(time, vs.start) >= 0)
+  return versionHalves.findLast(vs => time >= vs.start)
 }
 
 /** @type {Banner} */
@@ -574,7 +580,7 @@ function findBanner(type, time) {
   if (type === "100") return noviceBanner
   const banners = type === "200" ? stdBanners : eventBanners
   const banner = banners.findLast(
-    vs => type === vs.type && subtractTime(time, vs.start) >= 0
+    vs => type === vs.type && time >= vs.start
   )
   if (!banner) throw "找不到抽卡记录对应的卡池信息"
   return banner
