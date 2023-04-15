@@ -376,7 +376,9 @@ function mergeEntries(newEntries) {
   let mergedEntries = entryList.slice(0, existingI)
 
   let newI = 0
+  _adl(1)
   while (newI < newEntries.length) {
+    _adl()
     const newEntry = newEntries[newI]
     const existingEntry = entryList[existingI]
 
@@ -384,6 +386,7 @@ function mergeEntries(newEntries) {
     const earlierEntry = d < 0 ? newEntry : existingEntry
     mergedEntries.push(earlierEntry)
     if (d <= 0) newI++
+    if (d >= 0) existingI++
   }
 
   mergedEntries = mergedEntries.concat(entryList.slice(existingI))
