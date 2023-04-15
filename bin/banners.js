@@ -1,11 +1,7 @@
-// 本脚本生成版本和卡池的相关信息。
-// 文本框中填原神wiki上“祈愿”页面的wiki源代码。
-// https://wiki.biligame.com/ys/祈愿?action=raw
-// 或直接在 dgck81lnn.pony.icu 上运行
-
-if (!SoulLS.text) {
-  SoulLS.text = await (await fetch("/sandbox/echo.php?url=https://wiki.biligame.com/ys/祈愿?action=raw")).text()
-}
+#!/usr/bin/env node
+const path = require("node:path")
+const fsp = require("node:fs/promises")
+const axios = require("axios").default
 
 function normalizeTime(time) {
   return time.replace(/\//g, "-")
@@ -21,13 +17,13 @@ function makeBannerData(input) {
   const minorVerCounts = [6, 8]
   const banners = []
 
-  for (let [, s] of input.matchAll(/\{\{\s*祈愿\/(?:角色|武器)活动祈愿\s*\|([\s\S]+?)\}\}/g)) {
+  for (let [, s] of input.matchAll(
+    /\{\{\s*祈愿\/(?:角色|武器)活动祈愿\s*\|([\s\S]+?)\}\}/g
+  )) {
     let ver = s.match(/开始时间描述=(\d+\.\d+)/)?.[1]
     if (ver) {
       let [vmaj, vmin] = ver.split(".")
-      if (!minorVerCounts[vmaj - 1])
-
-        minorVerCounts[vmaj - 1] = ~~vmin
+      if (!minorVerCounts[vmaj - 1]) minorVerCounts[vmaj - 1] = ~~vmin
     }
     banners.push({
       version: ver ? `${ver} 上半` : "",
@@ -37,21 +33,26 @@ function makeBannerData(input) {
         ? "400"
         : "301",
       start: normalizeTime(
-        s.match(/开始时间=(.+)/)[1]
-        .replace(/(:\d\d):00/, "$1")
-        .replace(/\/\d(?=\/|\s)/g, s => `/0${s[1]}`)
-        .replace(/ 1[0-2]:\d\d/, "")
+        s
+          .match(/开始时间=(.+)/)[1]
+          .replace(/(:\d\d):00/, "$1")
+          .replace(/\/\d(?=\/|\s)/g, s => `/0${s[1]}`)
+          .replace(/ 1[0-2]:\d\d/, "")
       ),
       end: normalizeTime(
-        s.match(/结束时间=(.+)/)[1]
-        .replace(/(\d\d):59:59?/, hour => `${(parseInt(hour) + 1).toString().padStart(2, "0")}:00`)
-        .replace(/\/\d(?=\/)/g, s=>"/0"+s[1])
+        s
+          .match(/结束时间=(.+)/)[1]
+          .replace(
+            /(\d\d):59:59?/,
+            hour => `${(parseInt(hour) + 1).toString().padStart(2, "0")}:00`
+          )
+          .replace(/\/\d(?=\/)/g, s => "/0" + s[1])
       ),
       fiveStars: s.match(/5星.+?=(.+)/)[1].split("、"),
       fourStars: s.match(/4星.+?=(.+)/)[1].split("、"),
     })
   }
-  banners.sort((a, b) => a.start > b.start ? 1 : a.start < b.start ? -1 : 0)
+  banners.sort((a, b) => (a.start > b.start ? 1 : a.start < b.start ? -1 : 0))
 
   const verNums = []
   const verHalves = []
@@ -88,17 +89,17 @@ function makeBannerData(input) {
     const half2Label = `${ver} 下半`
     const half1Banner = banners.find(banner => banner.version === half1Label)
     const half2Banner = banners.find(banner => banner.version === half2Label)
-    const nextVerFirstBanner = i + 1 < verNums.length
-      ? banners.find(banner => banner.version === `${verNums[i + 1]} 上半`)
-      : null
+    const nextVerFirstBanner =
+      i + 1 < verNums.length
+        ? banners.find(banner => banner.version === `${verNums[i + 1]} 上半`)
+        : null
 
     verHalves.push({
       label: half1Label,
       start: half1Banner.start,
       end: half2Banner
         ? half2Banner.start
-
-        : half1Banner.end.split(" ")[0] + " 18:00"
+        : half1Banner.end.split(" ")[0] + " 18:00",
     })
     if (!half2Banner) break
     verHalves.push({
@@ -106,16 +107,17 @@ function makeBannerData(input) {
       start: half2Banner.start,
       end: nextVerFirstBanner
         ? nextVerFirstBanner.start
-        : tomorrow(half2Banner.end.split(" "))
+        : tomorrow(half2Banner.end.split(" ")),
     })
   }
 
   const stdBanners = []
-  const stdFiveStars = [
-    "琴", "莫娜", "刻晴", "七七", "迪卢克",
-    "天空之翼", "天空之卷", "天空之脊", "天空之傲", "天空之刃",
-    "阿莫斯之弓", "四风原典", "和璞鸢", "狼的末路", "风鹰剑",
-  ]
+  const stdFiveStars =
+    /* prettier-ignore */ [
+      "琴", "莫娜", "刻晴", "七七", "迪卢克",
+      "天空之翼", "天空之卷", "天空之脊", "天空之傲", "天空之刃",
+      "阿莫斯之弓", "四风原典", "和璞鸢", "狼的末路", "风鹰剑",
+    ]
   const stdNewFiveStars = {
     "3.1 上半": ["提纳里"],
     "3.6 上半": ["迪希雅"],
@@ -148,14 +150,14 @@ function makeBannerData(input) {
     eventBanners: banners.map(banner => ({
       label: `${
         banner.type === "302"
-        ? "武器"
-        : {
-          达达利亚: "公子",
-          雷电将军: "雷神",
-          纳西妲: "草神",
-          流浪者: "散兵",
-        }[banner.fiveStars[0]] ||
-        banner.fiveStars[0].slice(banner.fiveStars[0].length > 3 ? -2 : 0)
+          ? "武器"
+          : {
+              达达利亚: "公子",
+              雷电将军: "雷神",
+              纳西妲: "草神",
+              流浪者: "散兵",
+            }[banner.fiveStars[0]] ||
+            banner.fiveStars[0].slice(banner.fiveStars[0].length > 3 ? -2 : 0)
       }池`,
       type: banner.type,
       start: banner.start,
@@ -167,4 +169,24 @@ function makeBannerData(input) {
   })
 }
 
-return makeBannerData(SoulLS.text)
+async function main(outFile) {
+  const resp = await axios({
+    url: "https://wiki.biligame.com/ys/祈愿?action=raw",
+    responseType: "text",
+  })
+  const text = resp.data
+  const json = makeBannerData(text)
+  await fsp.writeFile(outFile, json)
+}
+
+process.chdir(path.dirname(process.argv[1]))
+
+main("../site/banners.json")
+  .then(() => {
+    console.warn("Result saved")
+  })
+  .catch(err => {
+    console.error(err)
+    if (err instanceof Error) console.error(err.stack)
+    console.error("\nBanners update failed")
+  })
