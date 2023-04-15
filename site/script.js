@@ -651,7 +651,7 @@ function render({ showStd = false } = {}) {
 
     let tooltip = null
     if (banner.type !== "100") {
-      info.push(pity.stat(type))
+      info.push(pity.stat(type).message)
 
       const bannerType = {
         301: "角色池",
@@ -678,7 +678,7 @@ function render({ showStd = false } = {}) {
 
     $E($header, "div", {
       className: `bannertime ${tooltip ? "mobiletooltip" : ""}`,
-      textContent: info,
+      textContent: info.join(" · "),
       title: tooltip,
       onclick: tooltip && mobileTooltip,
     })
