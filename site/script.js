@@ -109,6 +109,8 @@ class PityTracker {
     }
   }
 
+  // TODO: 检查常驻池来判断是否是歪常驻？
+  // TODO: 3.0 甘雨池和心海池反了？？
   /**
    * @param {GachaType} type
    * @param {string} name
@@ -179,11 +181,19 @@ class PityTracker {
       this[uncertainProp] = false
     }
 
-    return {
+    const o = {
       pity,
       uncertain,
       message: `第 ${pity} 抽${uncertain ? "？" : ""}`,
     }
+
+    if (type === "302" && is5Star) {
+      const isUp5Star = banner.fiveStars.includes(name)
+      o.isUp5Star = isUp5Star
+      if (!isUp5Star) o.message += ` · 歪常驻`
+    }
+
+    return o
   }
 
   /**
