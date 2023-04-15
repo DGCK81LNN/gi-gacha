@@ -374,10 +374,12 @@ function mergeEntries(newEntries) {
 
   let existingI = bisectEntry(newEntries[0])
   let mergedEntries = entryList.slice(0, existingI)
+  /** @param {GachaEntry[]} */
+  let tailEntries
 
   let newI = 0
   _adl(1)
-  while (newI < newEntries.length) {
+  while (true) {
     _adl()
     const newEntry = newEntries[newI]
     const existingEntry = entryList[existingI]
@@ -385,11 +387,21 @@ function mergeEntries(newEntries) {
     const d = compareEntries(newEntry, existingEntry)
     const earlierEntry = d < 0 ? newEntry : existingEntry
     mergedEntries.push(earlierEntry)
+
     if (d <= 0) newI++
     if (d >= 0) existingI++
+
+    if (newI === newEntries.length) {
+      tailEntries = entryList.slice(existingI)
+      break
+    }
+    if (existingI === entryList.length) {
+      tailEntries = newEntries.slice(newI)
+      break
+    }
   }
 
-  mergedEntries = mergedEntries.concat(entryList.slice(existingI))
+  mergedEntries = mergedEntries.concat(tailEntries)
   return mergeEntries
 }
 
