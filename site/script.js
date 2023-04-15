@@ -539,6 +539,12 @@ async function fetchEntries(urlStr) {
     },
     list,
   })
+  log("")
+
+  /** @param {string} str */
+  function log(str) {
+    $$$("files-url-log").textContent = str
+  }
 }
 
 function clearEntries() {
@@ -839,9 +845,11 @@ function initialize() {
   $$$("files-url-okbtn").onclick = async function () {
     this.disabled = true
     try {
+      const oldEntryCount = entryList.length
       await fetchEntries($$$("files-url").value)
+      alert(`获取成功😋\n新增 ${entryList.length - oldEntryCount} 条记录`)
     } catch (err) {
-      alert(`获取出错😭\n${err}`)
+      alert(`获取失败😭\n${err}`)
       throw err
     } finally {
       this.disabled = false
