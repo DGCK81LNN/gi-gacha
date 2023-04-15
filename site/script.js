@@ -539,7 +539,6 @@ async function fetchEntries(urlStr) {
     },
     list,
   })
-  log("")
 
   /** @param {string} str */
   function log(str) {
@@ -852,6 +851,7 @@ function initialize() {
       alert(`获取失败😭\n${err}`)
       throw err
     } finally {
+      $$$("files-url-log").textContent = ""
       this.disabled = false
     }
   }
