@@ -270,13 +270,7 @@ let stdBanners
 
 /** @type {GachaEntry[]} */
 let entryList = []
-/**
- * @deprecated
- * @type {Segment[]}
- */
-const segments = []
-/** @deprecated */
-let entryCount = 0
+/** @type {string} */
 let uid = null
 
 /**
@@ -323,90 +317,14 @@ function bisectEntry(entry) {
 
 /**
  * @param {GachaEntry[]} entries
- * @param {string} uid
  */
-function addEntries(newEntries, uid) {
-  validateEntries(newEntries)
-
-  if (entryList.length === 0) {
-    entryList = newEntries
-  } else {
-    let existingI = bisectEntry(newEntries[0])
-    const mergedEntries = entryList.slice(0, existingI)
-
-    let newI = 0
-    while (newI < newEntries.length) {
-      const newEntry = newEntries[newI]
-      const existingEntry = entryList[existingI]
-
-      const d = compareEntries(newEntry, existingEntry)
-      const earlierEntry = d < 0 ? newEntry : existingEntry
-      mergedEntries.push(earlierEntry)
-      if (d <= 0) newI++
-    }
-
-    mergedEntries = mergedEntries.concat(entryList.slice(existingI))
-
-    entryList = mergedEntries
-
-    //////////////////
-    const [x1, y1, x2, y2, mergedEntries] = findOverlap(entries)
-    const pre = (segments[x1] || []).slice(0, y1)
-    const post = (segments[x2] || []).slice(y2)
-    const start = x1
-    const end = x2 + 1
-    const replacement = [].concat(pre, mergedEntries, post)
-    if (!pre.length && compareEntries(mergedEntries[0], entries[0]) === 0)
-      replacement.$pi = entries.$pi
-    segments.splice(start, end - start, replacement)
-    segmentIndex = x1
-  }
-
+function addEntries(entries) {
+  validateEntries(entries)
+  entryList = mergeEntries(entries)
   updateEntryListStatus()
-
-  /**
-   * @param {GachaEntry[]} entries
-   * @returns {[number, number, number, number, GachaEntry[]]}
-   */
-  function findOverlap(entries) {
-    //const start = bisectEntry(entries[0])
-    //if (!start)
-    //  throw `新记录与已导入记录不匹配：首条记录（${entries[0].time}）在已导入记录所覆盖的时间范围内，但在已有记录中未找到该条记录`
-    const [x1, y1] = bisectEntry(entries[0])
-    let x2 = x1
-    let y2 = y1
-    let i = 0
-    const mergedEntries = []
-
-    //_adl(1)
-    outer: while (x2 < segments.length) {
-      while (y2 < segments[x2].length) {
-        //_adl()
-        const entry = entries[i]
-        const d = compareEntries(entry, segments[x2][y2])
-        if (d >= 0) {
-          mergedEntries.push(segments[x2][y2++])
-          if (d > 0) continue
-        } else {
-          mergedEntries.push(entry)
-        }
-        if (++i === entries.length) break outer
-      }
-      x2++
-      y2 = 0
-    }
-    if (y2 === 0 && x2 > x1) {
-      x2--
-      y2 = segments[x2].length
-    }
-
-    return [x1, y1, x2, y2, mergedEntries]
-  }
 }
 
-/**
- * @param {GachaEntry[]} entries
- */
+/** @param {GachaEntry[]} entries */
 function validateEntries(entries) {
   if (!Array.isArray(entries)) throw "记录列表不是数组"
   if (entries.length < 1) throw "记录为空"
@@ -448,6 +366,28 @@ function validateEntries(entries) {
     if (Array.isArray(val)) return val.map(quot).join(", ")
     return String(val)
   }
+}
+
+/** @param {GachaEntry[]} newEntries */
+function mergeEntries(newEntries) {
+  if (entryList.length === 0) return newEntries
+
+  let existingI = bisectEntry(newEntries[0])
+  let mergedEntries = entryList.slice(0, existingI)
+
+  let newI = 0
+  while (newI < newEntries.length) {
+    const newEntry = newEntries[newI]
+    const existingEntry = entryList[existingI]
+
+    const d = compareEntries(newEntry, existingEntry)
+    const earlierEntry = d < 0 ? newEntry : existingEntry
+    mergedEntries.push(earlierEntry)
+    if (d <= 0) newI++
+  }
+
+  mergedEntries = mergedEntries.concat(entryList.slice(existingI))
+  return mergeEntries
 }
 
 function updateEntryListStatus() {
@@ -799,9 +739,9 @@ function initialize() {
         export_timestamp: Math.floor(Date.now() / 1000),
         export_app: "soul.gi.gacha",
         export_app_version: "0.1",
-        uigf_version: "v2.0"
+        uigf_version: "v2.0",
       },
-      list: entryList.slice(0).reverse()
+      list: entryList.slice(0).reverse(),
     }
     const blob = new Blob([JSON.stringify(obj)], { type: "application/json" })
     const url = URL.createObjectURL(blob)
