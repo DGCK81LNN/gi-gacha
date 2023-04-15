@@ -573,7 +573,6 @@ const noviceBanner = {
 function findBanner(type, time) {
   if (type === "100") return noviceBanner
   const banners = type === "200" ? stdBanners : eventBanners
-  time = time.replace(/-/g, "/")
   const banner = banners.findLast(
     vs => type === vs.type && subtractTime(time, vs.start) >= 0
   )
