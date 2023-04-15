@@ -620,9 +620,9 @@ function render({ showStd = false } = {}) {
 
     if (
       tenPullIndex === -1 &&
-      seg[ei + 9] &&
-      seg[ei + 9].gacha_type === type &&
-      seg[ei + 9].time === time
+      entryList[ei + 9] &&
+      entryList[ei + 9].gacha_type === type &&
+      entryList[ei + 9].time === time
     ) {
       tenPullIndex = 0
       threeStars = 0
