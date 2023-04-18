@@ -470,7 +470,7 @@ function makeQueryString(record) {
 }
 
 /**
- * 修复服务器自动追加访问量统计 HTML 代码的问题
+ * 修复服务器有时自动追加访问量统计 HTML 代码的问题
  * @param {string} json
  */
 function fixJSON(json) {
@@ -857,7 +857,7 @@ function initialize() {
     const file = this.files[0]
     if (!file) return
     try {
-      const json = fixJSON(await file.text())
+      const json = await file.text()
       const data = JSON.parse(json)
       const oldEntryCount = entryList.length
       importUIGF(data)
@@ -900,10 +900,10 @@ function initialize() {
       info: {
         uid,
         lang: "zh-cn",
-        export_timestamp: Date.now(),
-        export_app: "soul.gi.gacha",
+        export_timestamp: Math.floor(Date.now() / 1000),
+        export_app: "dgck81lnn gi gacha visualize",
         export_app_version: "v0.1",
-        uigf_version: "v2.2",
+        uigf_version: "v2.3",
       },
       list: entryList.slice(0).reverse(),
     }
@@ -925,6 +925,7 @@ function initialize() {
 
 fetch("banners.json")
   .then(resp => resp.text())
+  .then(fixJSON)
   .then(JSON.parse)
   .then(data => {
     ;({ versionHalves, eventBanners, stdBanners } = data)
