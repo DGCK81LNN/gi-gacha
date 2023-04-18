@@ -436,15 +436,16 @@ function updateEntryListStatus() {
   $$$("files-status").textContent = status
 }
 
+/** @param {UIGFMergedHistory} data */
 function importUIGF(data) {
   const { info, list } = data
 
   if (info && info.lang && info.lang !== "zh-cn")
     throw "暂不支持导入简体中文以外语言的记录"
   if (uid === null) {
-    uid = info?.uid || null
+    uid = info && info.uid && String(info.uid) || null
   } else {
-    if (info && info.uid && info.uid !== uid)
+    if (info && info.uid && String(info.uid) !== uid)
       throw `只能导入同一账号的记录：已导入记录来自 UID ${uid}，正在导入的记录来自 UID ${info.uid}`
   }
 
@@ -466,6 +467,16 @@ function makeQueryString(record) {
   return Object.entries(record)
     .map(e => e.map(encodeURIComponent).join("="))
     .join("&")
+}
+
+/**
+ * 修复服务器自动追加访问量统计 HTML 代码的问题
+ * @param {string} json
+ */
+function fixJSON(json) {
+  json = json.match(/^((?:"[^"]*"|[^<])*)/)[1].trim()
+  if (!json) throw "会话失效，请刷新页面。若有未保存的数据，请注意保存！"
+  return json
 }
 
 /**
@@ -517,7 +528,7 @@ async function fetchEntries(urlStr) {
       log(`${typeName}池 第 ${page} 页…`)
 
       const resp = await fetch(`${baseURL}?${makeQueryString(params)}`)
-      const json = await resp.text()
+      const json = fixJSON(await resp.text())
       /**
        * @type {{
        *   retcode: number,
@@ -846,7 +857,7 @@ function initialize() {
     const file = this.files[0]
     if (!file) return
     try {
-      const json = await file.text()
+      const json = fixJSON(await file.text())
       const data = JSON.parse(json)
       const oldEntryCount = entryList.length
       importUIGF(data)
@@ -889,9 +900,9 @@ function initialize() {
       info: {
         uid,
         lang: "zh-cn",
-        export_timestamp: Math.floor(Date.now() / 1000),
+        export_timestamp: Date.now(),
         export_app: "soul.gi.gacha",
-        export_app_version: "0.1",
+        export_app_version: "v0.1",
         uigf_version: "v2.2",
       },
       list: entryList.slice(0).reverse(),
