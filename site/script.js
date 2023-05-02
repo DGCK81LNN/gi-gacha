@@ -288,6 +288,7 @@ let stdBanners
 let entryList = []
 /** @type {string} */
 let uid = null
+let unsavedChanges = false
 
 /**
  * @param {GachaEntry} e1
@@ -443,7 +444,7 @@ function importUIGF(data) {
   if (info && info.lang && info.lang !== "zh-cn")
     throw "暂不支持导入简体中文以外语言的记录"
   if (uid === null) {
-    uid = info && info.uid && String(info.uid) || null
+    uid = (info && info.uid && String(info.uid)) || null
   } else {
     if (info && info.uid && String(info.uid) !== uid)
       throw `只能导入同一账号的记录：已导入记录来自 UID ${uid}，正在导入的记录来自 UID ${info.uid}`
@@ -600,9 +601,7 @@ const noviceBanner = {
 function findBanner(type, time) {
   if (type === "100") return noviceBanner
   const banners = type === "200" ? stdBanners : eventBanners
-  const banner = banners.findLast(
-    vs => type === vs.type && time >= vs.start
-  )
+  const banner = banners.findLast(vs => type === vs.type && time >= vs.start)
   if (!banner) throw "找不到抽卡记录对应的卡池信息"
   return banner
 }
@@ -852,27 +851,37 @@ function render({ showStd = false } = {}) {
   $wrap.appendChild($container)
 }
 
+/** @param {BeforeUnloadEvent} ev */
+function beforeUnloadHandler(ev) {
+  ev.preventDefault()
+}
+
+function changesSaved() {
+  unsavedChanges = false
+  window.onbeforeunload = null
+  $$$("exportbtn").classList.remove("hint")
+}
+
 function initialize() {
   $$$("files-input").onchange = async function () {
     const file = this.files[0]
     if (!file) return
+    const oldEntryCount = entryList.length
     try {
       const json = await file.text()
       const data = JSON.parse(json)
-      const oldEntryCount = entryList.length
       importUIGF(data)
-      alert(`导入成功😋\n新增 ${entryList.length - oldEntryCount} 条记录`)
     } catch (err) {
       alert(`读取记录出错😭\n${err}`)
       throw err
     }
+    alert(`导入成功😋\n新增 ${entryList.length - oldEntryCount} 条记录`)
   }
   $$$("files-url-okbtn").onclick = async function () {
     this.disabled = true
+    const oldEntryCount = entryList.length
     try {
-      const oldEntryCount = entryList.length
       await fetchEntries($$$("files-url").value)
-      alert(`获取成功😋\n新增 ${entryList.length - oldEntryCount} 条记录`)
     } catch (err) {
       alert(`获取失败😭\n${err}`)
       throw err
@@ -880,9 +889,18 @@ function initialize() {
       $$$("files-url-log").textContent = ""
       this.disabled = false
     }
+    alert(
+      `获取成功😋\n新增 ${entryList.length - oldEntryCount} 条记录\n` +
+        "本程序暂不能记忆历史抽卡记录，请记得导出并保存你的抽卡记录到本地！"
+    )
+    unsavedChanges = true
+    window.onbeforeunload = beforeUnloadHandler
+    $$$("exportbtn").classList.add("hint")
   }
   $$$("files-clearbtn").onclick = () => {
+    if (unsavedChanges && !confirm("即将丢弃未保存的记录，确定继续？")) return
     clearEntries()
+    changesSaved()
   }
   $$$("renderbtn").onclick = () => {
     try {
@@ -914,6 +932,8 @@ function initialize() {
     $link.href = url
     $link.download = `抽卡记录 ${uid} ${time}.json`
     $link.click()
+
+    changesSaved()
 
     setTimeout(() => {
       URL.revokeObjectURL(url)

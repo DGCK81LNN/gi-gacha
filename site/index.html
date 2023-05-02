@@ -60,6 +60,16 @@ a:not(:hover) {
   margin: 0 0 1rem;
 }
 
+@keyframes hint {
+  50% {
+    transform: scale(1.25);
+    opacity: 0.8;
+  }
+}
+.hint {
+  animation: hint 2s infinite ease-in-out;
+}
+
 .sticky {
   margin: 0 -0.5rem;
   box-shadow: 0 0.125rem 0.125rem black;
