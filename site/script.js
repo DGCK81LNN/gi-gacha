@@ -695,7 +695,7 @@ function render({ showStd = false } = {}) {
       tooltip += banner.fiveStars
         .map(n => `${n.padStart(maxChars, "\u3000")} ★★★★★`)
         .join("\n")
-      if (banner.fourStars.length) {
+      if (banner.fourStars && banner.fourStars.length) {
         tooltip += "\n"
         tooltip += banner.fourStars
           .map(n => `${n.padStart(maxChars, "\u3000")} ★★★★`)

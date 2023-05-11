@@ -141,7 +141,7 @@ function makeBannerData(input) {
       start: normalizeTime(start),
       end: normalizeTime(end),
       fiveStars,
-      fourStars: [], // 省略
+      fourStars: null,
     })
   }
 
