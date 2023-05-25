@@ -690,7 +690,7 @@ function render({ showStd = false } = {}) {
       tooltip += `${banner.start} 至 ${banner.end}\n\n`
 
       const maxChars = Math.max(
-        ...[...banner.fiveStars, ...banner.fourStars].map(n => n.length)
+        ...[...banner.fiveStars, ...(banner.fourStars || [])].map(n => n.length)
       )
       tooltip += banner.fiveStars
         .map(n => `${n.padStart(maxChars, "\u3000")} ★★★★★`)
