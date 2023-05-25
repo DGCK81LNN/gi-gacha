@@ -145,28 +145,32 @@ function makeBannerData(input) {
     })
   }
 
-  return JSON.stringify({
-    versionHalves: verHalves,
-    eventBanners: banners.map(banner => ({
-      label: `${
-        banner.type === "302"
-          ? "武器"
-          : {
-              达达利亚: "公子",
-              雷电将军: "雷神",
-              纳西妲: "草神",
-              流浪者: "散兵",
-            }[banner.fiveStars[0]] ||
-            banner.fiveStars[0].slice(banner.fiveStars[0].length > 3 ? -2 : 0)
-      }池`,
-      type: banner.type,
-      start: banner.start,
-      end: banner.end,
-      fiveStars: banner.fiveStars,
-      fourStars: banner.fourStars,
-    })),
-    stdBanners,
-  })
+  return JSON.stringify(
+    {
+      versionHalves: verHalves,
+      eventBanners: banners.map(banner => ({
+        label: `${
+          banner.type === "302"
+            ? "武器"
+            : {
+                达达利亚: "公子",
+                雷电将军: "雷神",
+                纳西妲: "草神",
+                流浪者: "散兵",
+              }[banner.fiveStars[0]] ||
+              banner.fiveStars[0].slice(banner.fiveStars[0].length > 3 ? -2 : 0)
+        }池`,
+        type: banner.type,
+        start: banner.start,
+        end: banner.end,
+        fiveStars: banner.fiveStars,
+        fourStars: banner.fourStars,
+      })),
+      stdBanners,
+    },
+    null,
+    2
+  )
 }
 
 async function main(outFile) {
