@@ -8,7 +8,7 @@ function normalizeTime(time) {
 }
 
 function tomorrow(ymd) {
-  const date = new Date(`${ymd} UTC`)
+  const date = new Date(`${ymd}+0000`)
   date.setUTCDate(date.getUTCDate() + 1)
   return date.toISOString().split("T")[0]
 }
@@ -107,7 +107,7 @@ function makeBannerData(input) {
       start: half2Banner.start,
       end: nextVerFirstBanner
         ? nextVerFirstBanner.start
-        : tomorrow(half2Banner.end.split(" ")),
+        : tomorrow(half2Banner.end),
     })
   }
 
