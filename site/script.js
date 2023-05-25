@@ -352,7 +352,8 @@ function validateEntries(entries) {
     ap(entry, "rank_type", ["3", "4", "5"], i)
     ap(entry, "gacha_type", ["200", "301", "302", "400"], i)
     typeof entry.id === "string" || ap(entry, "id", undefined, i)
-    typeof entry.name === "string" || ap(entry, "name", undefined, i)
+    if (typeof entry.name !== "string")
+      throw `记录项 [${i}] 缺少属性 name：暂不支持 UIGF v2.3 格式`
 
     onlyProps(entry, entryProps)
     entry.uigf_gacha_type = toUIGFGachaType(entry.gacha_type)
@@ -363,7 +364,7 @@ function validateEntries(entries) {
 
   function ap(entry, attr, match, i) {
     const val = entry[attr]
-    if (val === undefined) throw `记录项 ${i} 缺少属性 ${attr}`
+    if (val === undefined) throw `记录项 [${i}] 缺少属性 ${attr}`
     let info
     if (match instanceof RegExp) {
       if (typeof val === "string" && match.test(val)) return
@@ -375,7 +376,7 @@ function validateEntries(entries) {
       if (match === val) return
       info = `${quot(val)}，应为${quot(match)}`
     }
-    info = `记录项 ${i} 的属性 ${attr} 不正确${info ? `：${info}` : ""}`
+    info = `记录项 [${i}] 的属性 ${attr} 不正确${info ? `：${info}` : ""}`
     throw info
   }
   function quot(val) {
