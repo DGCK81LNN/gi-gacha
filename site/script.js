@@ -922,7 +922,7 @@ function initialize() {
         export_timestamp: Math.floor(Date.now() / 1000),
         export_app: "dgck81lnn gi gacha visualize",
         export_app_version: "v0.1",
-        uigf_version: "v2.3",
+        uigf_version: "v2.2",
       },
       list: entryList.slice(0).reverse(),
     }
