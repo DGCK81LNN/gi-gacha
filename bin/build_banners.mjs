@@ -2,6 +2,7 @@
 import path from "node:path"
 import fsp from "node:fs/promises"
 import axios from "axios"
+import jsonDiff from "json-diff"
 
 function normalizeTime(time) {
   return time.replace(/\//g, "-")
@@ -213,6 +214,19 @@ async function makeBannerData() {
 process.chdir(path.dirname(process.argv[1]))
 const outFile = "../site/banners.json"
 
-const data = await makeBannerData()
+const readOldPromise = fsp.readFile(outFile)
+const makeDataPromise = makeBannerData()
+
+let old
+try {
+  old = JSON.parse((await readOldPromise).toString())
+} catch {}
+
+const data = await makeDataPromise
 await fsp.writeFile(outFile, JSON.stringify(data))
-console.warn("Result saved")
+
+if (old) {
+  console.log(jsonDiff.diffString(old, data))
+} else {
+  console.log("banners.json created")
+}
