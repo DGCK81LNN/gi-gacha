@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-const path = require("node:path")
-const fsp = require("node:fs/promises")
-const axios = require("axios").default
+import path from "node:path"
+import fsp from "node:fs/promises"
+import axios from "axios"
 
 function normalizeTime(time) {
   return time.replace(/\//g, "-")
@@ -13,7 +13,42 @@ function tomorrow(ymd) {
   return date.toISOString().split("T")[0]
 }
 
-function makeBannerData(input) {
+async function makeBannerData() {
+  //#region 1. 预先并行发起所有需要的 HTTP 请求
+  // 获取原神 wiki 上[[祈愿]]条目的 wikitext
+  const getInputPromise = axios({
+    url: "https://wiki.biligame.com/ys/祈愿?action=raw",
+    responseType: "text",
+  })
+
+  // 从 UIGF.org 获取物品名称、ID 对照表
+  async function getItemNames(lang) {
+    const { data } = await axios({
+      url: `https://api.uigf.org/dict/genshin/${lang}.json`,
+      responseType: "json",
+    })
+    return Object.fromEntries(
+      Object.entries(data)
+        .filter(([, id]) => {
+          if (id >= 11000 && id < 20000) return true
+          if (id >= 1e7 && id < 1.1e7) return true
+          return false
+        })
+        .map(([name, id]) => [id, name])
+    )
+  }
+  const langs = [
+    "chs",
+    //"cht", "en",
+  ]
+  const itemNamesPromises = langs.map(async lang => [
+    lang,
+    await getItemNames(lang),
+  ])
+  //#endregion
+
+  //#region 2. 分析原神 wiki 上[[祈愿]]条目的 wikitext 获取卡池数据
+  const { data: input } = await getInputPromise
   const minorVerCounts = [6, 8]
   const banners = []
 
@@ -144,53 +179,40 @@ function makeBannerData(input) {
       fourStars: null,
     })
   }
+  //#endregion
 
-  return JSON.stringify(
-    {
-      versionHalves: verHalves,
-      eventBanners: banners.map(banner => ({
-        label: `${
-          banner.type === "302"
-            ? "武器"
-            : {
-                达达利亚: "公子",
-                雷电将军: "雷神",
-                纳西妲: "草神",
-                流浪者: "散兵",
-              }[banner.fiveStars[0]] ||
-              banner.fiveStars[0].slice(banner.fiveStars[0].length > 3 ? -2 : 0)
-        }池`,
-        type: banner.type,
-        start: banner.start,
-        end: banner.end,
-        fiveStars: banner.fiveStars,
-        fourStars: banner.fourStars,
-      })),
-      stdBanners,
-    },
-    null,
-    2
-  )
-}
+  // 3. 整理物品名称、ID 对照表
+  const itemNames = Object.fromEntries(await Promise.all(itemNamesPromises))
 
-async function main(outFile) {
-  const resp = await axios({
-    url: "https://wiki.biligame.com/ys/祈愿?action=raw",
-    responseType: "text",
-  })
-  const text = resp.data
-  const json = makeBannerData(text)
-  await fsp.writeFile(outFile, json)
+  // 4. 组合数据
+  return {
+    versionHalves: verHalves,
+    eventBanners: banners.map(banner => ({
+      label: `${
+        banner.type === "302"
+          ? "武器"
+          : {
+              达达利亚: "公子",
+              雷电将军: "雷神",
+              纳西妲: "草神",
+              流浪者: "散兵",
+            }[banner.fiveStars[0]] ||
+            banner.fiveStars[0].slice(banner.fiveStars[0].length > 3 ? -2 : 0)
+      }池`,
+      type: banner.type,
+      start: banner.start,
+      end: banner.end,
+      fiveStars: banner.fiveStars,
+      fourStars: banner.fourStars,
+    })),
+    stdBanners,
+    itemNames,
+  }
 }
 
 process.chdir(path.dirname(process.argv[1]))
+const outFile = "../site/banners.json"
 
-main("../site/banners.json")
-  .then(() => {
-    console.warn("Result saved")
-  })
-  .catch(err => {
-    console.error(err)
-    if (err instanceof Error) console.error(err.stack)
-    console.error("\nBanners update failed")
-  })
+const data = await makeBannerData()
+await fsp.writeFile(outFile, JSON.stringify(data))
+console.warn("Result saved")

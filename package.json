@@ -4,6 +4,6 @@
     "axios": "^1.3.5"
   },
   "scripts": {
-    "build-banners": "node bin/build_banners.js"
+    "build-banners": "node bin/build_banners.mjs"
   }
 }
