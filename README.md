@@ -24,9 +24,9 @@ If you discover bugs or have any suggestions to improve this tool, feel free to 
 
 ## 计划功能 Planned features
 
-- [X] 导入/导出 [UIGF] 格式（版本 2.2）的抽卡记录文件
+- [X] 导入/导出 [UIGF] 格式的抽卡记录文件
 
-  Import & export gacha history as files in the [UIGF] format (version 2.2)
+  Import & export gacha history as files in the [UIGF] format
 
 - [X] 通过抓包 URL 自动获取记录
 
@@ -36,13 +36,13 @@ If you discover bugs or have any suggestions to improve this tool, feel free to 
 
   Show/hide standard & beginner banner history
 
+- [X] 支持 [UIGF] v2.3
+
+  Support for [UIGF] v2.3
+
 - [ ] 支持简体中文以外的语言
 
   Support for languages other than Simplified Chinese
-
-- [ ] 支持 [UIGF] v2.3
-
-  Support for [UIGF] v2.3
 
 - [ ] _《崩坏星穹铁道抽卡记录可视化》_
 

@@ -32,11 +32,16 @@ function onlyProps(obj, props) {
 /** @typedef {"char" | "charLost5050" | "weapon" | "std"} PityType */
 /** @typedef {"3" | "4" | "5"} Rarity */
 /**
+ * @typedef {"chs" | "cht" | "de" | "en" | "es" | "fr" | "id" | "jp" | "kr" |
+ *           "pt" | "ru" | "th" | "vi"} Language
+ */
+/**
  * @typedef {{
  *   count: number,
  *   id: string,
  *   item_type: string,
  *   gacha_type: GachaType,
+ *   item_id: number,
  *   name: string,
  *   rank_type: Rarity,
  *   time: string,
@@ -110,7 +115,6 @@ class PityTracker {
   }
 
   // TODO: 检查常驻池来判断是否是歪常驻？
-  // TODO: 3.0 甘雨池和心海池反了？？
   /**
    * @param {GachaType} type
    * @param {string} name
@@ -273,6 +277,7 @@ const entryProps = Object.freeze([
   "gacha_type",
   "id",
   "item_type",
+  "item_id",
   "name",
   "rank_type",
   "time",
@@ -283,6 +288,10 @@ let versionHalves
 let eventBanners
 /** @type {Banner[]} */
 let stdBanners
+/** @type {Record<Language, Record<number, string>>} */
+let itemNames
+/** @type {Record<string, number>} */
+let chsToIdMap = {}
 
 /** @type {GachaEntry[]} */
 let entryList = []
@@ -351,9 +360,19 @@ function validateEntries(entries) {
     ap(entry, "time", datetimeRe, i)
     ap(entry, "rank_type", ["3", "4", "5"], i)
     ap(entry, "gacha_type", ["200", "301", "302", "400"], i)
-    typeof entry.id === "string" || ap(entry, "id", undefined, i)
-    if (typeof entry.name !== "string")
-      throw `记录项 [${i}] 缺少属性 name：暂不支持 UIGF v2.3 格式`
+    if (typeof entry.id !== "string") ap(entry, "id", undefined, i)
+    if (entry.item_id === undefined) {
+      if (
+        typeof entry.name !== "string" ||
+        !chsToIdMap.hasOwnProperty(entry.name)
+      )
+        ap(entry, "name", undefined, i)
+        entry.item_id = chsToIdMap[entry.name]
+    } else {
+      if (!itemNames.chs.hasOwnProperty(entry.item_id))
+        ap(entry, "item_id", undefined, i)
+      entry.name = itemNames.chs[entry.item_id]
+    }
 
     onlyProps(entry, entryProps)
     entry.uigf_gacha_type = toUIGFGachaType(entry.gacha_type)
@@ -368,13 +387,13 @@ function validateEntries(entries) {
     let info
     if (match instanceof RegExp) {
       if (typeof val === "string" && match.test(val)) return
-      info = JSON.stringify(val)
+      info = quot(val)
     } else if (Array.isArray(match)) {
       if (match.includes(val)) return
       info = `${quot(val)}，应为 ${quot(match)}`
     } else if (match !== undefined) {
       if (match === val) return
-      info = `${quot(val)}，应为${quot(match)}`
+      info = `${quot(val)}，应为 ${quot(match)}`
     }
     info = `记录项 [${i}] 的属性 ${attr} 不正确${info ? `：${info}` : ""}`
     throw info
@@ -921,8 +940,8 @@ function initialize() {
         lang: "zh-cn",
         export_timestamp: Math.floor(Date.now() / 1000),
         export_app: "dgck81lnn gi gacha visualize",
-        export_app_version: "v0.1",
-        uigf_version: "v2.2",
+        export_app_version: "v0.2",
+        uigf_version: "v2.3",
       },
       list: entryList.slice(0).reverse(),
     }
@@ -946,10 +965,10 @@ function initialize() {
 
 fetch("banners.json")
   .then(resp => resp.text())
-  .then(fixJSON)
-  .then(JSON.parse)
-  .then(data => {
-    ;({ versionHalves, eventBanners, stdBanners } = data)
+  .then(json => {
+    const data = JSON.parse(fixJSON(json))
+    ;({ versionHalves, eventBanners, stdBanners, itemNames } = data)
+    for (const id in itemNames.chs) chsToIdMap[itemNames.chs[id]] = +id
     initialize()
   })
   .catch(err => {
