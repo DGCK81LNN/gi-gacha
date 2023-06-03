@@ -504,13 +504,8 @@ function fixJSON(json) {
  */
 async function fetchEntries(urlStr) {
   const perPage = 20
-  const neededParams = [
-    "authkey_ver",
-    "sign_type",
-    "auth_appid",
-    "region",
-    "authkey",
-  ]
+  const neededParams = ["authkey_ver", "authkey"]
+  const optionalParams = ["sign_type", "auth_appid", "region"]
   /** @type {[UIGFGachaType, string][]} */
   const types = [
     ["301", "角色"],
@@ -525,6 +520,10 @@ async function fetchEntries(urlStr) {
     const val = findSearchParam(urlStr, key)
     if (!val) throw `输入网址中缺少参数 ${key}`
     params[key] = val
+  }
+  for (const key of optionalParams) {
+    const val = findSearchParam(urlStr, key)
+    if (val) params[key] = val
   }
   params.lang = "zh-cn"
   params.size = perPage
