@@ -357,20 +357,20 @@ function validateEntries(entries) {
 
   for (const [i, entry] of entries.entries()) {
     if (typeof entry !== "object") throw `记录项 [${i}] 不是对象`
-    ap(entry, "time", datetimeRe, i)
-    ap(entry, "rank_type", ["3", "4", "5"], i)
-    ap(entry, "gacha_type", ["200", "301", "302", "400"], i)
-    if (typeof entry.id !== "string") ap(entry, "id", undefined, i)
+    ap(entry, i, "time", datetimeRe)
+    ap(entry, i, "rank_type", ["3", "4", "5"])
+    ap(entry, i, "gacha_type", ["200", "301", "302", "400"])
+    if (typeof entry.id !== "string") ap(entry, i, "id")
     if (entry.item_id === undefined) {
       if (
         typeof entry.name !== "string" ||
         !chsToIdMap.hasOwnProperty(entry.name)
       )
-        ap(entry, "name", undefined, i)
+        ap(entry, i, "name")
       entry.item_id = chsToIdMap[entry.name]
     } else {
       if (!itemNames.chs.hasOwnProperty(entry.item_id))
-        ap(entry, "item_id", undefined, i)
+        ap(entry, i, "item_id")
       entry.name = itemNames.chs[entry.item_id]
     }
 
@@ -381,7 +381,7 @@ function validateEntries(entries) {
   entries.reverse()
   entries.sort(compareEntries)
 
-  function ap(entry, attr, match, i) {
+  function ap(entry, i, attr, match) {
     const val = entry[attr]
     if (val === undefined) throw `记录项 [${i}] 缺少属性 ${attr}`
     let info
