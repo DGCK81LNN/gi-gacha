@@ -369,8 +369,7 @@ function validateEntries(entries) {
         ap(entry, i, "name")
       entry.item_id = chsToIdMap[entry.name]
     } else {
-      if (!itemNames.chs.hasOwnProperty(entry.item_id))
-        ap(entry, i, "item_id")
+      if (!itemNames.chs.hasOwnProperty(entry.item_id)) ap(entry, i, "item_id")
       entry.name = itemNames.chs[entry.item_id]
     }
 
