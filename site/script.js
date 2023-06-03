@@ -367,7 +367,7 @@ function validateEntries(entries) {
         !chsToIdMap.hasOwnProperty(entry.name)
       )
         ap(entry, "name", undefined, i)
-        entry.item_id = chsToIdMap[entry.name]
+      entry.item_id = chsToIdMap[entry.name]
     } else {
       if (!itemNames.chs.hasOwnProperty(entry.item_id))
         ap(entry, "item_id", undefined, i)
@@ -874,6 +874,7 @@ function render({ showStd = false } = {}) {
 /** @param {BeforeUnloadEvent} ev */
 function beforeUnloadHandler(ev) {
   ev.preventDefault()
+  return ""
 }
 
 function changesSaved() {
