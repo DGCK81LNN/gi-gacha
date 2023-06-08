@@ -18,7 +18,7 @@ async function makeBannerData() {
   //#region 1. 预先并行发起所有需要的 HTTP 请求
   // 获取原神 wiki 上[[祈愿]]条目的 wikitext
   const getInputPromise = axios({
-    url: "https://wiki.biligame.com/ys/祈愿?action=raw",
+    url: "https://wiki.biligame.com/ys/index.php?title=祈愿&action=raw",
     responseType: "text",
   })
 
