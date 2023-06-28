@@ -359,7 +359,7 @@ function validateEntries(entries) {
     if (typeof entry !== "object") throw `记录项 [${i}] 不是对象`
     ap(entry, i, "time", datetimeRe)
     ap(entry, i, "rank_type", ["3", "4", "5"])
-    ap(entry, i, "gacha_type", ["200", "301", "302", "400"])
+    ap(entry, i, "gacha_type", ["100", "200", "301", "302", "400"])
     if (typeof entry.id !== "string") ap(entry, i, "id")
     if (entry.item_id === undefined) {
       if (
