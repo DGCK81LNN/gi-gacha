@@ -172,6 +172,10 @@ a:not(:hover) {
 .mobiletooltip[title]:not([title=""]):hover {
   outline: 2px dashed gold;
 }
+
+[hidden] {
+  display: none !important;
+}
     </style>
   </head>
   <body>
@@ -208,8 +212,22 @@ a:not(:hover) {
         <fieldset id=optiongroup-options class="optiongroup">
           <legend>选项</legend>
           <div>
-            <input type=checkbox id=option-showstd>
-            <label for=option-showstd>显示常驻池、新手池记录</label>
+            <div>
+              <input type=checkbox id=option-showstd>
+              <label for=option-showstd>显示常驻池、新手池记录</label>
+            </div>
+            <div>
+              <input type=checkbox id=option-uncertain-char>
+              <label for=option-uncertain-char>角色池有已过期无法查询的抽卡历史</label>
+            </div>
+            <div>
+              <input type=checkbox id=option-uncertain-weapon>
+              <label for=option-uncertain-weapon>武器池有已过期无法查询的抽卡历史</label>
+            </div>
+            <div id=option-uncertain-std-wrap hidden>
+              <input type=checkbox id=option-uncertain-std>
+              <label for=option-uncertain-std>常驻池有已过期无法查询的抽卡历史</label>
+            </div>
           </div>
         </fieldset>
       </div>

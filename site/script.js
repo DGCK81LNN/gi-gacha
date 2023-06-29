@@ -648,7 +648,12 @@ function $E(parent, name, o) {
   return $e
 }
 
-function render({ showStd = false } = {}) {
+function render({
+  showStd = false,
+  charUncertain = false,
+  weaponUncertain = false,
+  stdUncertain = false,
+} = {}) {
   const $container = document.createDocumentFragment()
 
   let $verHalf
@@ -732,6 +737,7 @@ function render({ showStd = false } = {}) {
   }
 
   const pity = new PityTracker()
+  Object.assign(pity, { charUncertain, weaponUncertain, stdUncertain })
 
   let prevVerHalf = null
   let prevDay = ""
@@ -923,10 +929,16 @@ function initialize() {
     clearEntries()
     changesSaved()
   }
+  $$$("option-showstd").onchange = function () {
+    $$$("option-uncertain-std-wrap").hidden = !this.checked
+  }
   $$$("renderbtn").onclick = () => {
     try {
       render({
         showStd: $$$("option-showstd").checked,
+        charUncertain: $$$("option-uncertain-char").checked,
+        weaponUncertain: $$$("option-uncertain-weapon").checked,
+        stdUncertain: $$$("option-uncertain-std").checked,
       })
     } catch (err) {
       alert(`加载出错😭\n${err}`)
