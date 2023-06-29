@@ -122,7 +122,7 @@ class PityTracker {
    * @param {Banner} banner
    */
   next(type, name, rarity, banner) {
-    if (type === "100") return null
+    if (type === "100") return { message: "" }
 
     const is5Star = rarity === "5"
 
@@ -204,7 +204,7 @@ class PityTracker {
    * @param {GachaType} type
    */
   stat(type) {
-    if (type === "100") return null
+    if (type === "100") return { message: "" }
 
     if (type === "301" || type === "400") {
       const pity = this.charPity
@@ -361,7 +361,7 @@ function validateEntries(entries) {
     ap(entry, i, "rank_type", ["3", "4", "5"])
     ap(entry, i, "gacha_type", ["100", "200", "301", "302", "400"])
     if (typeof entry.id !== "string") ap(entry, i, "id")
-    if (entry.item_id === undefined) {
+    if (!entry.item_id) {
       if (
         typeof entry.name !== "string" ||
         !chsToIdMap.hasOwnProperty(entry.name)
@@ -390,7 +390,9 @@ function validateEntries(entries) {
     } else if (Array.isArray(match)) {
       if (match.includes(val)) return
       info = `${quot(val)}，应为 ${quot(match)}`
-    } else if (match !== undefined) {
+    } else if (match === undefined) {
+      info = quot(val)
+    } else {
       if (match === val) return
       info = `${quot(val)}，应为 ${quot(match)}`
     }
@@ -695,7 +697,7 @@ function render({ showStd = false } = {}) {
       info.push(`剩余 ${formatDur(subtractTime(banner.end, datetime))}`)
 
     let tooltip = null
-    if (banner.type !== "100") {
+    if (type !== "100") {
       info.push(pity.stat(type).message)
 
       const bannerType = {
@@ -703,7 +705,7 @@ function render({ showStd = false } = {}) {
         400: "角色池2",
         302: "武器池",
         200: "常驻池",
-      }[banner.type]
+      }[type]
       tooltip = bannerType + "\n"
       tooltip += `${banner.start} 至 ${banner.end}\n\n`
 
