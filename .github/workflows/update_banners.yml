@@ -1,8 +1,8 @@
 name: Update banner data
 on:
   schedule:
-  - cron: "0 4 * * 3"
-  - cron: "0 11 * * 2"
+  - cron: "15 3 * * 3"
+  - cron: "15 10 * * 2"
   workflow_dispatch: { }
 jobs:
   update_banners:
