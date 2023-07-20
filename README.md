@@ -12,9 +12,9 @@ __[立即试用 · Try it now!](http://dgck81lnn.pony.icu/gi/gacha/)__
 
 ![截图](images/screenshot.png)
 
-如果您发现本工具存在 bug，或有任何意见或建议，欢迎在 issues 中指出。
+如果您发现本工具存在 bug，或有任何意见建议，欢迎在 issues 中提出。
 
-If you discover bugs or have any suggestions to improve this tool, feel free to submit an issue!
+If you discover bugs or have any suggestions, feel free to submit an issue!
 
 ## 计划功能 Planned features
 
@@ -22,9 +22,9 @@ If you discover bugs or have any suggestions to improve this tool, feel free to 
 
   Import & export gacha history as files in the [UIGF] format
 
-- [X] 通过抓包 URL 自动获取记录
+- [X] 通过 API URL 自动获取记录
 
-  Automatically fetch gacha history using URL from packet capture
+  Automatically fetch gacha history using API URL
 
 - [X] 显示/隐藏常驻池、新手池记录
 
@@ -42,7 +42,7 @@ If you discover bugs or have any suggestions to improve this tool, feel free to 
 
   Support for languages other than Simplified Chinese
 
-- [ ] _《崩坏星穹铁道抽卡记录可视化》_
+- [ ] _《崩坏:星穹铁道抽卡记录可视化》_
 
   A similar tool for Honkai: Star Rail
 
