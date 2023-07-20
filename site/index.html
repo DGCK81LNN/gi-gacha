@@ -7,6 +7,8 @@
     <meta name=format-detection content="telephone=no">
     <!--<link rel=stylesheet href="https://dgck81lnn.github.io/bootstrap-lnn/dist/bootstrap-lnn.min.css"><!--
     <script defer src="https://dgck81lnn.github.io/bootstrap-lnn/dist/bootstrap.bundle.min.js"></script>-->
+    <link rel=stylesheet href="/css3/basic.css">
+    <link rel=stylesheet href="/css3/night.css">
 <style>
 :root {
   --bg: black;
@@ -191,8 +193,8 @@ a:not(:hover) {
           <legend>导入抽卡记录</legend>
           <details>
             <summary>打开抽卡记录文件</summary>
-            <input type=file id=files-input accept=".json">
-            <p>仅支持 <a href="https://uigf.org/zh/standards/UIGF.html">UIGF</a>（统一可交换祈愿记录标准）v2 JSON 格式的记录。</p>
+            <input type=file id=files-input accept=".json" style="max-width: 80vw">
+            <p>仅支持 <a href="https://uigf.org/zh/standards/UIGF.html">UIGF</a>（统一可交换祈愿记录标准）v2 格式的记录。</p>
           </details>
           <details>
             <summary>使用抽卡分析 URL 查询</summary>
@@ -241,6 +243,7 @@ a:not(:hover) {
     <hr>
     <footer id=section-footer class="section">
       <p>原神抽卡记录可视化 by DGCK81LNN (aka 蕾)</p>
+      <p lang=en>hosted by ponyicu</p>
     </footer>
 
     <!--<script>

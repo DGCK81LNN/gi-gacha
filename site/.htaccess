@@ -1,0 +1,6 @@
+Header unset expires
+Header set Cache-Control "max-age=86400"
+
+<FilesMatch "\.json$">
+Header set Cache-Control "max-age=120"
+</FilesMatch>

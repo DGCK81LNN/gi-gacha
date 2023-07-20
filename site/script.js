@@ -334,14 +334,14 @@ function validateEntries(entries) {
     const val = entry[attr]
     if (val === undefined) throw `记录项 [${i}] 缺少属性 ${attr}`
     let info
-    if (match instanceof RegExp) {
+    if (match === undefined) {
+      info = quot(val)
+    } else if (match instanceof RegExp) {
       if (typeof val === "string" && match.test(val)) return
       info = quot(val)
     } else if (Array.isArray(match)) {
       if (match.includes(val)) return
       info = `${quot(val)}，应为 ${quot(match)}`
-    } else if (match === undefined) {
-      info = quot(val)
     } else {
       if (match === val) return
       info = `${quot(val)}，应为 ${quot(match)}`
