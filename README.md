@@ -16,12 +16,6 @@ __[立即试用 · Try it now!](http://dgck81lnn.pony.icu/gi/gacha/)__
 
 If you discover bugs or have any suggestions to improve this tool, feel free to submit an issue!
 
-## 已知问题 Known issues
-
-* 每次卡池更新后，本工具需要一小时到一天（具体暂不确定）的时间来更新卡池数据，届时如果您导入最新的抽卡记录，本工具可能会显示错误的数据。
-
-  Every time new banners come out, it may take some time between an hour and a day for this tool to update its banner data, wherein erroneous data may be presented if you import your latest gacha history.
-
 ## 计划功能 Planned features
 
 - [X] 导入/导出 [UIGF] 格式的抽卡记录文件
@@ -39,6 +33,10 @@ If you discover bugs or have any suggestions to improve this tool, feel free to 
 - [X] 支持 [UIGF] v2.3
 
   Support for [UIGF] v2.3
+
+- [ ] 更好的 UI
+
+  Better UI
 
 - [ ] 支持简体中文以外的语言
 
