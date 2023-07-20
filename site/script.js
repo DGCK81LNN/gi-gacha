@@ -1,3 +1,5 @@
+/// <reference path="../types.d.ts" />
+
 const $$$ = id => document.getElementById(id)
 /**
  * @template T
@@ -25,58 +27,6 @@ function onlyProps(obj, props) {
   }
   return obj
 }
-
-/** @typedef {"100" | "200" | "301" | "302" | "400"} GachaType */
-/** @typedef {"100" | "200" | "301" | "302"} UIGFGachaType */
-/** @typedef {"char" | "weapon" | "std" | "novice"} GachaTypeName */
-/** @typedef {"char" | "charLost5050" | "weapon" | "std"} PityType */
-/** @typedef {"3" | "4" | "5"} Rarity */
-/**
- * @typedef {"chs" | "cht" | "de" | "en" | "es" | "fr" | "id" | "jp" | "kr" |
- *           "pt" | "ru" | "th" | "vi"} Language
- */
-/**
- * @typedef {{
- *   count: number,
- *   id: string,
- *   item_type: string,
- *   gacha_type: GachaType,
- *   item_id: number,
- *   name: string,
- *   rank_type: Rarity,
- *   time: string,
- *   uigf_gacha_type: UIGFGachaType,
- * }} GachaEntry
- */
-/**
- * @typedef {{
- *   label: string,
- *   start: string,
- *   end: string,
- * }} VersionHalf
- */
-/**
- * @typedef {{
- *   label: string,
- *   start: string,
- *   end: string,
- *   fiveStars: string[],
- *   fourStars: string[],
- * }} Banner
- */
-/**
- * @typedef {{
- *   info: {
- *     uid: string,
- *     lang: string,
- *     export_timestamp?: number,
- *     export_app?: string,
- *     export_app_version?: string,
- *     uigf_version?: string,
- *   },
- *   list: GachaEntry[],
- * }} UIGFMergedHistory
- */
 
 class PityTracker {
   constructor() {
