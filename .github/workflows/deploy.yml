@@ -1,0 +1,33 @@
+name: Deploy by FTP
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: { }
+jobs:
+  deployment:
+    if: >
+      !(
+        github.event_name == 'push' &&
+        github.run_attempt == 1 &&
+        (
+          contains(github.event.head_commit.message, '@@__LNN_NO_BUILD__@@') ||
+          (
+            github.event.head_commit.author.name == 'dependabot[bot]' &&
+            contains(github.event.head_commit.message, 'updated-dependencies:')
+          )
+        )
+      )
+    runs-on: ubuntu-latest
+    environment: lnnsite
+    steps:
+    - name: Check out
+      uses: actions/checkout@v2
+    - name: Deploy
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+        local-dir: ./site/
+        server: ${{ vars.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        server-dir: htdocs/gi/gacha/
+        dry-run: true
