@@ -8,12 +8,14 @@ jobs:
   update_banners:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-node@v3
+    - name: Check out
+      uses: actions/checkout@v2
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
       with:
         node-version: 16
     - run: npm install
-    - name: Run build-banners script
+    - name: Build banners
       run: |
         npm run build-banners | tee '~output'
         echo $'Automated update\n\nBuild output:\n\n~~~diff' > '~body'

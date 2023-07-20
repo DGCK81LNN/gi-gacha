@@ -1,150 +1,163 @@
 #!/usr/bin/env node
+
+/// <reference path="../types.d.ts" />
 import path from "node:path"
 import fsp from "node:fs/promises"
 import axios from "axios"
 import jsonDiff from "json-diff"
 
-function normalizeTime(time) {
-  return time.replace(/\//g, "-")
-}
-
-function tomorrow(ymd) {
-  const date = new Date(`${ymd}+0000`)
-  date.setUTCDate(date.getUTCDate() + 1)
+/** @param {string} ymd */
+function roundToDay(ymd) {
+  let date = new Date(`${ymd}+0000`)
+  date = new Date(Math.round(+date / 86_400_000) * 86_400_000)
   return date.toISOString().split("T")[0]
 }
 
-async function makeBannerData() {
-  //#region 1. 预先并行发起所有需要的 HTTP 请求
-  // 获取原神 wiki 上[[祈愿]]条目的 wikitext
-  const getInputPromise = axios({
-    url: "https://wiki.biligame.com/ys/index.php?title=祈愿&action=raw",
-    responseType: "text",
-  })
+/**
+ * @template {string | number | symbol} K
+ * @template {string | number | symbol} V
+ * @param {Record<K, V>} dict
+ * @returns {Record<V, K>}
+ */
+function invertDict(dict) {
+  return Object.fromEntries(Object.entries(dict).map(ent => ent.reverse()))
+}
 
+/** @type {Record<string, string>} */
+const charaNameAbbrevs = {
+  达达利亚: "公子",
+  雷电将军: "雷神",
+  纳西妲: "草神",
+  流浪者: "散兵",
+}
+/**
+ * @param {string} type
+ * @param {string} fiveStars
+ */
+function getEventBannerLabel(type, fiveStars) {
+  if (type === "302") return "武器"
+  const charaName = fiveStars[0]
+  if (charaNameAbbrevs.hasOwnProperty(charaName))
+    return charaNameAbbrevs[charaName]
+  if (charaName.length > 3) return charaName.slice(-2)
+  return charaName
+}
+
+async function makeBannerData() {
   // 从 UIGF.org 获取物品名称、ID 对照表
-  async function getItemNames(lang) {
+  /**
+   * @param {string} lang
+   */
+  async function getDict(lang) {
+    /** @type {{ data: Record<string, number> }} */
     const { data } = await axios({
       url: `https://api.uigf.org/dict/genshin/${lang}.json`,
       responseType: "json",
     })
-    return Object.fromEntries(
-      Object.entries(data)
-        .filter(([, id]) => {
-          if (id >= 11000 && id < 20000) return true
-          if (id >= 1e7 && id < 1.1e7) return true
-          return false
-        })
-        .map(([name, id]) => [id, name])
+    for (const name in data) {
+      const id = data[name]
+      if (!((id >= 11000 && id < 20000) || (id >= 1e7 && id < 1.1e7)))
+        delete data[name]
+    }
+
+    // 磐岩结绿译名问题临时修复
+    // TODO: 待 UIGF-API 修复该问题后移除
+    if (lang === "en") data["Primordial Jade Cutter"] = 11505
+
+    return data
+  }
+
+  const dictPromises = {
+    chs: getDict("chs"),
+    en: getDict("en"),
+  }
+
+  // 通过 <https://genshin-impact.fandom.com/wiki/User:Lnn031537128/Wish_List> 获取卡池数据（英文）
+  const rawBannersData = await axios({
+    url:
+      "https://genshin-impact.fandom.com/api.php?action=expandtemplates" +
+      "&prop=wikitext&format=json&formatversion=2" +
+      `&text=${encodeURIComponent("{{User:Lnn031537128/Wish List}}")}`,
+    responseType: "json",
+  }).then(response => response.data.expandtemplates.wikitext)
+
+  /** @type {Record<string, number>} */
+  const enDict = await dictPromises.en
+  /** @type {Record<number, string>} */
+  const chsInvertedDict = invertDict(await dictPromises.chs)
+  /** @param {string} name */
+  function enToChs(name) {
+    if (!enDict.hasOwnProperty(name))
+      throw new Error(`Item name not found: '${name}'`)
+    const id = enDict[name]
+    if (!chsInvertedDict.hasOwnProperty(id))
+      throw new Error(`Chinese name not found for item '${name}' (${id})`)
+    return chsInvertedDict[id]
+  }
+
+  /**
+   * @param {string} offset
+   * @param {number} lineIndex
+   * @param {string} prop
+   */
+  function assertTimeZoneAsia(offset, lineIndex, prop) {
+    if (offset && offset !== "UTC+8" && offset !== "GMT+8")
+      throw new Error(`Unexpected ${prop} of '${offset}' on line ${lineIndex}`)
+  }
+
+  /** @type {Banner[]} */
+  const eventBanners = []
+  /** @type {VersionHalf[]} */
+  const versionHalves = []
+  let currentVersion = ""
+  let inSecondHalf = false
+  for (const [i, line] of rawBannersData.split("\n").entries()) {
+    if (!line) continue
+
+    /** @type {Record<string, string>} */
+    const info = Object.fromEntries(
+      line
+        .split(";")
+        .filter(kvpair => kvpair)
+        .map(kvpair => kvpair.split("=", 2))
     )
-  }
-  const langs = [
-    "chs",
-    //"cht", "en",
-  ]
-  const itemNamesPromises = langs.map(async lang => [
-    lang,
-    await getItemNames(lang),
-  ])
-  //#endregion
+    if (!info.time_start) continue
+    assertTimeZoneAsia(info.time_start_offset, i, "time_start_offset")
+    assertTimeZoneAsia(info.time_end_offset, i, "time_end_offset")
 
-  //#region 2. 分析原神 wiki 上[[祈愿]]条目的 wikitext 获取卡池数据
-  const { data: input } = await getInputPromise
-  const minorVerCounts = [6, 8]
-  const banners = []
-
-  for (let [, s] of input.matchAll(
-    /\{\{\s*祈愿\/(?:角色|武器)活动祈愿\s*\|([\s\S]+?)\}\}/g
-  )) {
-    let ver = s.match(/开始时间描述=(\d+\.\d+)/)?.[1]
-    if (ver) {
-      let [vmaj, vmin] = ver.split(".")
-      if (!minorVerCounts[vmaj - 1]) minorVerCounts[vmaj - 1] = ~~vmin
+    const featuring = info.featuring.split(",")
+    if (featuring.includes("Unknown Character")) {
+      console.warn(`Skipping line ${i} because pool contains Unknown Character`)
+      continue
     }
-    banners.push({
-      version: ver ? `${ver} 上半` : "",
-      type: s.includes("武器")
-        ? "302"
-        : s.match(/期数=(.+)/)[1].includes("-2")
-        ? "400"
-        : "301",
-      start: normalizeTime(
-        s
-          .match(/开始时间=(.+)/)[1]
-          .replace(/(:\d\d):00/, "$1")
-          .replace(/\/\d(?=\/|\s)/g, s => `/0${s[1]}`)
-          .replace(/ 1[0-2]:\d\d/, "")
-      ),
-      end: normalizeTime(
-        s
-          .match(/结束时间=(.+)/)[1]
-          .replace(
-            /(\d\d):59:59?/,
-            hour => `${(parseInt(hour) + 1).toString().padStart(2, "0")}:00`
-          )
-          .replace(/\/\d(?=\/)/g, s => "/0" + s[1])
-      ),
-      fiveStars: s.match(/5星.+?=(.+)/)[1].split("、"),
-      fourStars: s.match(/4星.+?=(.+)/)[1].split("、"),
-    })
-  }
-  banners.sort((a, b) => (a.start > b.start ? 1 : a.start < b.start ? -1 : 0))
 
-  const verNums = []
-  const verHalves = []
-  for (const [x, n] of minorVerCounts.entries()) {
-    for (let y = 0; y <= n; y++) {
-      const ver = `${x + 1}.${y}`
-      verNums.push(ver)
+    const type = info.gacha_type
+    const start = info.time_start.replace(/ (09|10|11):.*/, "")
+    const end = info.time_end
+    const fiveStarCount = info.gacha_type === "302" ? 2 : 1
+    const fiveStars = featuring.slice(0, fiveStarCount).map(enToChs)
+    const fourStars = featuring.slice(fiveStarCount).map(enToChs)
+
+    eventBanners.push({
+      label: `${getEventBannerLabel(type, fiveStars)}池`,
+      type,
+      start,
+      //startAbsolute: !!info.time_start_offset,
+      end,
+      //endAbsolute: !!info.time_end_offset,
+      fiveStars,
+      fourStars,
+    })
+
+    if (type === "302") {
+      inSecondHalf = info.version === currentVersion
+      currentVersion = info.version
+      versionHalves.push({
+        label: `${currentVersion} ${inSecondHalf ? "下半" : "上半"}`,
+        start: start,
+        end: inSecondHalf ? roundToDay(end) : `${end.split(" ")[0]} 18:00:00`,
+      })
     }
-  }
-
-  {
-    let ver = "1.0 上半"
-    let start = banners[0].start
-    for (let banner of banners) {
-      if (banner.version) {
-        ver = banner.version
-      } else {
-        if (banner.start !== start) {
-          // next version-half
-          if (banner.start.includes("18:00")) ver = ver.replace("上", "下")
-          else ver = verNums[verNums.indexOf(ver.split(" ")[0]) + 1] + " 上半"
-        }
-        banner.version = ver
-      }
-      start = banner.start
-    }
-  }
-  // 对 1.3 版本特殊处理，按武器池划分上下半
-  delete banners.find(banner => banner.fiveStars[0] === "魈").version
-  delete banners.find(banner => banner.fiveStars[0] === "刻晴").version
-
-  for (const [i, ver] of verNums.entries()) {
-    const half1Label = `${ver} 上半`
-    const half2Label = `${ver} 下半`
-    const half1Banner = banners.find(banner => banner.version === half1Label)
-    const half2Banner = banners.find(banner => banner.version === half2Label)
-    const nextVerFirstBanner =
-      i + 1 < verNums.length
-        ? banners.find(banner => banner.version === `${verNums[i + 1]} 上半`)
-        : null
-
-    verHalves.push({
-      label: half1Label,
-      start: half1Banner.start,
-      end: half2Banner
-        ? half2Banner.start
-        : half1Banner.end.split(" ")[0] + " 18:00",
-    })
-    if (!half2Banner) break
-    verHalves.push({
-      label: half2Label,
-      start: half2Banner.start,
-      end: nextVerFirstBanner
-        ? nextVerFirstBanner.start
-        : tomorrow(half2Banner.end),
-    })
   }
 
   const stdBanners = []
@@ -160,59 +173,42 @@ async function makeBannerData() {
   }
 
   {
+    const addStdBanner = (start, end, fiveStars) => {
+      stdBanners.push({
+        label: "常驻池",
+        type: "200",
+        start,
+        end,
+        fiveStars,
+        fourStars: null,
+      })
+    }
     let fiveStars = stdFiveStars
     let start = "2020-09-28"
     for (const [label, newFiveStars] of Object.entries(stdNewFiveStars)) {
-      const end = verHalves.find(verHalf => verHalf.label === label).start
+      const end = versionHalves.find(vh => vh.label === label).start
       addStdBanner(start, end, fiveStars)
       fiveStars = fiveStars.concat(newFiveStars)
       start = end
     }
     addStdBanner(start, "9999-12-31", fiveStars)
   }
-  function addStdBanner(start, end, fiveStars) {
-    stdBanners.push({
-      label: "常驻池",
-      type: "200",
-      start: normalizeTime(start),
-      end: normalizeTime(end),
-      fiveStars,
-      fourStars: null,
-    })
+
+  const itemNames = {
+    chs: chsInvertedDict,
   }
-  //#endregion
 
-  // 3. 整理物品名称、ID 对照表
-  const itemNames = Object.fromEntries(await Promise.all(itemNamesPromises))
-
-  // 4. 组合数据
   return {
-    versionHalves: verHalves,
-    eventBanners: banners.map(banner => ({
-      label: `${
-        banner.type === "302"
-          ? "武器"
-          : {
-              达达利亚: "公子",
-              雷电将军: "雷神",
-              纳西妲: "草神",
-              流浪者: "散兵",
-            }[banner.fiveStars[0]] ||
-            banner.fiveStars[0].slice(banner.fiveStars[0].length > 3 ? -2 : 0)
-      }池`,
-      type: banner.type,
-      start: banner.start,
-      end: banner.end,
-      fiveStars: banner.fiveStars,
-      fourStars: banner.fourStars,
-    })),
+    versionHalves,
+    eventBanners,
     stdBanners,
     itemNames,
   }
 }
 
-process.chdir(path.dirname(process.argv[1]))
-const outFile = "../site/banners.json"
+const outFile = path.normalize(
+  `${path.dirname(process.argv[1])}/../site/banners.json`
+)
 
 const readOldPromise = fsp.readFile(outFile)
 const makeDataPromise = makeBannerData()
@@ -226,7 +222,9 @@ const data = await makeDataPromise
 await fsp.writeFile(outFile, JSON.stringify(data))
 
 if (old) {
-  console.log(jsonDiff.diffString(old, data))
+  const diff = jsonDiff.diffString(old, data)
+  if (diff) console.log(diff)
+  else console.warn("no change to banners.json")
 } else {
-  console.log("banners.json created")
+  console.warn("banners.json created")
 }
