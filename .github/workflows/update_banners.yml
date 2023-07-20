@@ -25,6 +25,7 @@ jobs:
       uses: peter-evans/create-pull-request@v5
       with:
         add-paths: site/banners.json
+        author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
         commit-message: Update banners.json
         branch: auto-update-banners
         title: Update banners.json
