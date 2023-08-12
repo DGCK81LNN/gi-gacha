@@ -29,6 +29,7 @@ const charaNameAbbrevs = {
   雷电将军: "雷神",
   纳西妲: "草神",
   流浪者: "散兵",
+  芙宁娜: "水神",
 }
 /**
  * @param {string} type
