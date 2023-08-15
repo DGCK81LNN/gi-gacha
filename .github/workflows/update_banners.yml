@@ -17,10 +17,11 @@ jobs:
     - run: npm install
     - name: Build banners
       run: |
-        npm run build-banners | tee '~output'
-        echo $'Automated update\n\nBuild output:\n\n~~~diff' > '~body'
-        sed -e 's/\x1b\[[0-9;]*m//g' '~output' >> '~body'
-        echo '~~~' >> '~body'
+        npm run build-banners | tee '~output' && (
+          echo $'Automated update\n\nBuild output:\n\n~~~diff' > '~body'
+          sed -e 's/\x1b\[[0-9;]*m//g' '~output' >> '~body'
+          echo '~~~' >> '~body'
+        )
     - name: Create pull request
       uses: peter-evans/create-pull-request@v5
       with:
