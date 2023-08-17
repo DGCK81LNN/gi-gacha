@@ -24,7 +24,7 @@ function invertDict(dict) {
 }
 
 /** @type {Record<string, string>} */
-const charaNameAbbrevs = {
+const charaShortNames = {
   达达利亚: "公子",
   雷电将军: "雷神",
   纳西妲: "草神",
@@ -38,8 +38,8 @@ const charaNameAbbrevs = {
 function getEventBannerLabel(type, fiveStars) {
   if (type === "302") return "武器"
   const charaName = fiveStars[0]
-  if (charaNameAbbrevs.hasOwnProperty(charaName))
-    return charaNameAbbrevs[charaName]
+  if (charaShortNames.hasOwnProperty(charaName))
+    return charaShortNames[charaName]
   if (charaName.length > 3) return charaName.slice(-2)
   return charaName
 }
