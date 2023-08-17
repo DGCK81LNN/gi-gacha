@@ -45,24 +45,24 @@ function getEventBannerLabel(type, fiveStars) {
 }
 
 async function makeBannerData() {
-  // 从 UIGF.org 获取物品名称、ID 对照表
+  // 从 Snap.Metadata 获取物品名称、ID 对照表
   /**
-   * @param {string} lang
+   * @param {Language} lang
    */
   async function getDict(lang) {
-    /** @type {{ data: Record<string, number> }} */
-    const { data } = await axios({
-      url: `https://api.uigf.org/dict/genshin/${lang}.json`,
-      responseType: "json",
+    const { data: csv } = await axios({
+      url: `https://github.com/DGP-Studio/Snap.Metadata/raw/main/CheatTable/${lang.toUpperCase()}/AvatarAndWeapon.csv`,
+      responseType: "text",
     })
-    for (const name in data) {
-      const id = data[name]
-      if (!((id >= 11000 && id < 20000) || (id >= 1e7 && id < 1.1e7)))
-        delete data[name]
+    /** @type {Record<string, number>} */
+    const data = {}
+    for (const line of csv.trim().split("\n")) {
+      const [id, name] = line.split(",")
+      if (!((id >= 11000 && id < 20000) || (id >= 1e7 && id < 1.1e7))) continue
+      data[name] = id
     }
 
     // 磐岩结绿译名问题临时修复
-    // TODO: 待 UIGF-API 修复该问题后移除
     if (lang === "en") data["Primordial Jade Cutter"] = 11505
 
     return data
@@ -82,9 +82,7 @@ async function makeBannerData() {
     responseType: "json",
   }).then(response => response.data.expandtemplates.wikitext)
 
-  /** @type {Record<string, number>} */
   const enDict = await dictPromises.en
-  /** @type {Record<number, string>} */
   const chsInvertedDict = invertDict(await dictPromises.chs)
   /** @param {string} name */
   function enToChs(name) {
