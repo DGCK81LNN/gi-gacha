@@ -17,7 +17,7 @@ jobs:
     - run: npm install
     - name: Build banners
       run: |
-        npm run build-banners | tee '~output' && (
+        npm run build-banners > >(tee '~output') && (
           echo $'Automated update\n\nBuild output:\n\n~~~diff' > '~body'
           sed -e 's/\x1b\[[0-9;]*m//g' '~output' >> '~body'
           echo '~~~' >> '~body'
