@@ -14,13 +14,17 @@ function roundToDay(ymd) {
 }
 
 /**
- * @template {string | number | symbol} K
- * @template {string | number | symbol} V
+ * @template {string | number} K
+ * @template {string | number} V
  * @param {Record<K, V>} dict
- * @returns {Record<V, K>}
+ * @returns {Record<V, string>}
  */
 function invertDict(dict) {
-  return Object.fromEntries(Object.entries(dict).map(ent => ent.reverse()))
+  return Object.fromEntries(
+    Object.entries(dict)
+      .map(ent => ent.reverse())
+      .reverse()
+  )
 }
 
 /** @type {Record<string, string>} */
@@ -54,17 +58,16 @@ async function makeBannerData() {
       url: `https://github.com/DGP-Studio/Snap.Metadata/raw/main/CheatTable/${lang.toUpperCase()}/AvatarAndWeapon.csv`,
       responseType: "text",
     })
-    /** @type {Record<string, number>} */
+    /** @type {Record<number, string>} */
     const data = {}
     for (const line of csv.trim().split("\n")) {
-      const [id, name] = line.split(",")
-      if (!((id >= 11000 && id < 20000) || (id >= 1e7 && id < 1.1e7))) continue
-      data[name] = id
+      const [ids, name] = line.split(",")
+      const id = +ids
+      if (!id || !name) continue
+      if (id < 11000 || (id >= 20000 && id < 10000000) || id >= 11000000)
+        continue
+      data[id] = name
     }
-
-    // 磐岩结绿译名问题临时修复
-    if (lang === "en") data["Primordial Jade Cutter"] = 11505
-
     return data
   }
 
@@ -82,16 +85,16 @@ async function makeBannerData() {
     responseType: "json",
   }).then(response => response.data.expandtemplates.wikitext)
 
-  const enDict = await dictPromises.en
-  const chsInvertedDict = invertDict(await dictPromises.chs)
+  const enInvertedDict = invertDict(await dictPromises.en)
+  const chsDict = await dictPromises.chs
   /** @param {string} name */
   function enToChs(name) {
-    if (!enDict.hasOwnProperty(name))
+    if (!enInvertedDict.hasOwnProperty(name))
       throw new Error(`Item name not found: '${name}'`)
-    const id = enDict[name]
-    if (!chsInvertedDict.hasOwnProperty(id))
+    const id = enInvertedDict[name]
+    if (!chsDict.hasOwnProperty(id))
       throw new Error(`Chinese name not found for item '${name}' (${id})`)
-    return chsInvertedDict[id]
+    return chsDict[id]
   }
 
   /**
@@ -194,7 +197,7 @@ async function makeBannerData() {
   }
 
   const itemNames = {
-    chs: chsInvertedDict,
+    chs: chsDict,
   }
 
   return {

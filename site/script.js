@@ -931,7 +931,10 @@ fetch("banners.json")
   .then(json => {
     const data = JSON.parse(fixJSON(json))
     ;({ versionHalves, eventBanners, stdBanners, itemNames } = data)
-    for (const id in itemNames.chs) chsToIdMap[itemNames.chs[id]] = +id
+    for (const id in itemNames.chs) {
+      const chsName = itemNames.chs[id]
+      chsToIdMap.hasOwnProperty(chsName) || (chsToIdMap[chsName] = +id)
+    }
     initialize()
   })
   .catch(err => {
