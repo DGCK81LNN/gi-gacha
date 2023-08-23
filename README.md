@@ -1,5 +1,8 @@
 # 原神抽卡记录可视化 Genshin gacha history visualizer
 
+[![卡池数据自动更新状态 Banner data auto update status](https://img.shields.io/github/actions/workflow/status/DGCK81LNN/gi-gacha/update_banners.yml?logo=github&logoColor=silver&label=卡池数据自动更新状态+Banner+data+auto+update+status)
+](https://github.com/DGCK81LNN/gi-gacha/actions/workflows/update_banners.yml)
+
 这是一个简易的工具，可以将您的原神抽卡记录以直观而详细的格式呈现，不仅显示五星物品，也包括四星物品。您可以看到抽的是哪个卡池，卡池中有哪些UP四星（仅限活动祈愿），抽卡时卡池的剩余时间、保底抽数，以及哪些物品是在十连抽中抽到的、是十连抽中的第几抽。
 
 This is a simple tool that shows your Genshin Impact gacha history in a clear and detailed format, including not only 5-star items but also 4-star items. You can see which banner you pulled from, which featured 4-star items are in that banner, the remaining time and pity counter when you pulled, as well as which items are from a 10-wish set, and how manyth wish each is on.
