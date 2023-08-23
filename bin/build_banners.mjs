@@ -35,6 +35,7 @@ const charaShortNames = {
   流浪者: "散兵",
   芙宁娜: "水神",
   那维莱特: "那维",
+  莱欧斯利: "莱欧",
 }
 /**
  * @param {string} type
