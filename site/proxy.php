@@ -24,7 +24,7 @@ $allow_base_urls = [
   'https://hk4e-api-os.hoyoverse.com/event/gacha_info/api/getGachaLog',
 ];
 if (!in_array($base_url, $allow_base_urls)) {
-  complain('网址有误，拒绝代理此请求', -11451400);
+  complain('网址有误，服务器拒绝代理此请求', -11451400);
 }
 
 $headers = [];
@@ -50,13 +50,14 @@ curl_setopt_array($request, [
     return strlen($header);
   },
   CURLOPT_TIMEOUT => 5,
+  CURLOPT_USERAGENT => 'GIGachaVisualizer/0.0.1',
 ]);
-$response = curl_exec($handle);
-curl_close($handle);
+$response = curl_exec($request);
+curl_close($request);
 
 if ($response === false) {
-  $err = curl_error($handle);
-  complain("代理请求时出现错误：$err", -11451400 - curl_errno($handle));
+  $err = curl_error($request);
+  complain("代理请求时出现错误：$err", -11451400 - curl_errno($request));
 }
 
 foreach ($headers as $header) {
