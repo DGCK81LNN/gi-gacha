@@ -226,7 +226,7 @@ const data = await makeDataPromise
 await fsp.writeFile(outFile, JSON.stringify(data))
 
 if (old) {
-  const diff = jsonDiff.diffString(old, data)
+  const diff = jsonDiff.diffString(old, data, { maxElisions: 1 })
   if (diff) console.log(diff)
   else console.warn("no change to banners.json")
 } else {
