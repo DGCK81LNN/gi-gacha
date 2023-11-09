@@ -16,17 +16,18 @@ jobs:
     - run: npm install
     - name: Build banners
       run: |
-        npm run build-banners > >(tee '~output') && (
-          echo $'Automated update\n\nBuild output:\n\n~~~diff' > '~body'
-          sed -e 's/\x1b\[[0-9;]*m//g' '~output' >> '~body'
-          echo '~~~' >> '~body'
-        )
+        npm run build-banners --silent > >(tee '~output') &&
+        (
+          echo $'Automated update\n\nBuild output:\n\n~~~diff'
+          sed -e 's/\x1b\[[0-9;]*m//g' '~output'
+          echo '~~~'
+        ) > '~body'
     - name: Create pull request
       uses: peter-evans/create-pull-request@v5
       with:
         add-paths: site/banners.json
         author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
-        commit-message: Update banners.json
+        commit-message: "chore: update banners.json"
         branch: auto-update-banners
         title: Update banners.json
         body-path: "~body"
