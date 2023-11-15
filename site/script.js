@@ -27,6 +27,18 @@ function onlyProps(obj, props) {
   }
   return obj
 }
+/**
+ * @template T
+ * @template {T} [S=T]
+ * @param {readonly T[]} array
+ * @param {(value: T, index: number, array: typeof array) => value is S} predicate
+ */
+function findLast(array, predicate) {
+  for (let i = array.length - 1; i >= 0; i--) {
+    const value = array[i]
+    if (predicate(value, i, array)) return value
+  }
+}
 
 class PityTracker {
   constructor() {
@@ -40,9 +52,6 @@ class PityTracker {
     this.weaponUncertain = true
     this.stdUncertain = true
   }
-
-  /** @type {PityType[]} */
-  static pityTypes = ["char", "charLost5050", "weapon", "std"]
 
   /**
    * @param {GachaType} type
@@ -188,6 +197,9 @@ class PityTracker {
   }
 }
 
+/** @type {PityType[]} */
+PityTracker.pityTypes = ["char", "charLost5050", "weapon", "std"]
+
 /**
  * @param {string} aa
  * @param {string} bb
@@ -213,8 +225,8 @@ function formatDur(d) {
 
   //const secs  = ~~(ad /      1 % 60)
   const mins = ~~((ad / 60) % 60)
-  const hours = ~~((ad / 3_600) % 24)
-  const days = ~~(ad / 86_400)
+  const hours = ~~((ad / 3600) % 24)
+  const days = ~~(ad / 86400)
 
   if (days) return `${sign}${days} 天 ${hours} 时`
   return `${sign}${hours} 时 ${mins} 分`
@@ -281,14 +293,14 @@ function bisectEntry(entry) {
   let end = entryList.length
   let mid = 0
 
-  while (true) {
-    if (start === end) return start
+  while (start < end) {
     mid = ~~((start + end) / 2)
     const d = compareEntries(entry, entryList[mid])
     if (d > 0) start = mid + 1
     else if (d < 0) end = mid
     else return mid
   }
+  return start
 }
 
 /**
@@ -314,12 +326,13 @@ function validateEntries(entries) {
     if (!entry.item_id) {
       if (
         typeof entry.name !== "string" ||
-        !chsToIdMap.hasOwnProperty(entry.name)
+        !Object.prototype.hasOwnProperty.call(chsToIdMap, entry.name)
       )
         ap(entry, i, "name")
       entry.item_id = chsToIdMap[entry.name]
     } else {
-      if (!itemNames.chs.hasOwnProperty(entry.item_id)) ap(entry, i, "item_id")
+      if (!Object.prototype.hasOwnProperty.call(itemNames.chs, entry.item_id))
+        ap(entry, i, "item_id")
       entry.name = itemNames.chs[entry.item_id]
     }
 
@@ -366,7 +379,7 @@ function mergeEntries(newEntries) {
   let tailEntries
 
   let newI = 0
-  while (true) {
+  do {
     const newEntry = newEntries[newI]
     const existingEntry = entryList[existingI]
 
@@ -379,13 +392,11 @@ function mergeEntries(newEntries) {
 
     if (newI === newEntries.length) {
       tailEntries = entryList.slice(existingI)
-      break
     }
     if (existingI === entryList.length) {
       tailEntries = newEntries.slice(newI)
-      break
     }
-  }
+  } while (!tailEntries)
 
   mergedEntries = mergedEntries.concat(tailEntries)
   return mergedEntries
@@ -446,7 +457,7 @@ function makeQueryString(record) {
  * @param {string} json
  */
 function fixJSON(json) {
-  json = json.match(/^((?:"[^"]*"|[^<])*)/)[1].trim()
+  json = json.match(/^((?:"(?:\\[\s\S]|[^"])*"|[^<])*)/)[1].trim()
   if (!json) throw "会话失效，请刷新页面。若有未保存的数据，请注意保存！"
   return json
 }
@@ -493,7 +504,7 @@ async function fetchEntries(urlStr) {
     let page = 1
 
     params.gacha_type = type
-    while (true) {
+    do {
       params.page = page
       params.end_id = next
       log(`${typeName}池 第 ${page} 页…`)
@@ -519,10 +530,9 @@ async function fetchEntries(urlStr) {
       const list = obj.data.list
       pages.push(list)
 
-      if (list.length < perPage) break
       next = last(list).id
       page++
-    }
+    } while (!(list.length < perPage))
   }
 
   const list = Array.prototype.concat(...pages)
@@ -554,7 +564,7 @@ function clearEntries() {
  * @param {string} time
  */
 function findVerHalf(time) {
-  return versionHalves.findLast(vs => time >= vs.start)
+  return findLast(versionHalves, vs => time >= vs.start)
 }
 
 /** @type {Banner} */
@@ -571,12 +581,12 @@ const noviceBanner = {
 function findBanner(type, time) {
   if (type === "100") return noviceBanner
   const banners = type === "200" ? stdBanners : eventBanners
-  const banner = banners.findLast(vs => type === vs.type && time >= vs.start)
+  const banner = findLast(banners, vs => type === vs.type && time >= vs.start)
   if (!banner) throw "找不到抽卡记录对应的卡池信息"
   return banner
 }
 
-function mobileTooltip(event) {
+function mobileTooltip(_event) {
   if (this.title) {
     alert(this.title)
   }
@@ -690,9 +700,9 @@ function render({
   Object.assign(pity, { charUncertain, weaponUncertain, stdUncertain })
 
   let prevVerHalf = null
-  let prevDay = ""
+  let prevDate = ""
   let recentTime = ""
-  let prevTime = ""
+  //let prevTime = ""
   let prevBanner = null
   //newVerHalf(prevVerHalf)
 
@@ -727,7 +737,7 @@ function render({
     }
     prevVerHalf = verHalf
     prevDate = date
-    prevTime = time
+    //prevTime = time
     prevBanner = banner
 
     if (
@@ -841,11 +851,22 @@ function changesSaved() {
 
 function initialize() {
   $$$("files-input").onchange = async function () {
+    /** @type {File} */
     const file = this.files[0]
     if (!file) return
     const oldEntryCount = entryList.length
     try {
-      const json = await file.text()
+      /** @type {string} */
+      const json = await new Promise((resolve, reject) => {
+        const r = new FileReader()
+        r.onload = () => {
+          resolve(r.result)
+        }
+        r.onerror = () => {
+          reject(r.error)
+        }
+        r.readAsText(file)
+      })
       const data = JSON.parse(json)
       importUIGF(data)
     } catch (err) {
@@ -933,7 +954,8 @@ fetch("banners.json")
     ;({ versionHalves, eventBanners, stdBanners, itemNames } = data)
     for (const id in itemNames.chs) {
       const chsName = itemNames.chs[id]
-      chsToIdMap.hasOwnProperty(chsName) || (chsToIdMap[chsName] = +id)
+      Object.prototype.hasOwnProperty.call(chsToIdMap, chsName) ||
+        (chsToIdMap[chsName] = +id)
     }
     initialize()
   })
