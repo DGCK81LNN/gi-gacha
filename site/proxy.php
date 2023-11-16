@@ -50,7 +50,7 @@ curl_setopt_array($request, [
     return strlen($header);
   },
   CURLOPT_TIMEOUT => 5,
-  CURLOPT_USERAGENT => 'GIGachaVisualizer/0.0.1',
+  CURLOPT_USERAGENT => 'GIGachaVisualizer/0.3',
 ]);
 $response = curl_exec($request);
 curl_close($request);
