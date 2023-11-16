@@ -15,6 +15,18 @@ function normalizeTime(time) {
   return time.replace(/\//g, "-")
 }
 /**
+ * @param {string} n
+ */
+function decrement(n) {
+  return n === "0"
+    ? "-1"
+    : n[0] === "-"
+    ? n.replace(/(\b|[0-8])(9*)$/, (_, a, m) => +a + 1 + "0".repeat(m.length))
+    : n
+        .replace(/([1-9])(0*)$/, (_, a, m) => a - 1 + "9".repeat(m.length))
+        .replace(/^0(?!$)/, "")
+}
+/**
  * @template O
  * @template {keyof O} K
  * @param {O} obj
@@ -250,9 +262,9 @@ let versionHalves
 let eventBanners
 /** @type {Banner[]} */
 let stdBanners
-/** @type {Record<Language, Record<number, string>>} */
+/** @type {Record<Language, Record<string, string>>} */
 let itemNames
-/** @type {Record<string, number>} */
+/** @type {Record<string, string>} */
 let chsToIdMap = {}
 
 /** @type {GachaEntry[]} */
@@ -267,6 +279,7 @@ let unsavedChanges = false
  */
 function compareEntries(e1, e2) {
   if (e1.time === e2.time) {
+    if (!e1.id || !e2.id) return 0
     if (e1.id.length === e2.id.length) {
       if (e1.id === e2.id) return 0
       return e1.id > e2.id ? 1 : -1
@@ -322,17 +335,19 @@ function validateEntries(entries) {
     ap(entry, i, "time", datetimeRe)
     ap(entry, i, "rank_type", ["3", "4", "5"])
     ap(entry, i, "gacha_type", ["100", "200", "301", "302", "400"])
-    if (typeof entry.id !== "string") ap(entry, i, "id")
+    if (entry.id && (typeof entry.id !== "string" || isNaN(entry.id)))
+      cp(entry, i, "id")
     if (!entry.item_id) {
       if (
         typeof entry.name !== "string" ||
         !Object.prototype.hasOwnProperty.call(chsToIdMap, entry.name)
       )
-        ap(entry, i, "name")
+        cp(entry, i, "name", "本程序卡池数据过时，或抽卡记录语言不是简体中文？")
       entry.item_id = chsToIdMap[entry.name]
     } else {
       if (!Object.prototype.hasOwnProperty.call(itemNames.chs, entry.item_id))
-        ap(entry, i, "item_id")
+        cp(entry, i, "item_id", "本程序卡池数据过时？")
+      entry.item_id += ""
       entry.name = itemNames.chs[entry.item_id]
     }
 
@@ -343,24 +358,50 @@ function validateEntries(entries) {
   entries.reverse()
   entries.sort(compareEntries)
 
-  function ap(entry, i, attr, match) {
+  if (!last(entries).id) cp(last(entries), entries.length - 1, "id")
+  // 补全记录 ID
+  for (let i = entries.length - 2; i >= 0; i--) {
+    if (!entries[i].id) entries[i].id = decrement(entries[i + 1].id)
+  }
+
+  /**
+   * assert-prop
+   * @template T
+   * @template {keyof T} K
+   * @param {T} entry
+   * @param {number} i
+   * @param {K} attr
+   * @param {T[K] | T[K][] | RegExp | undefined} [match]
+   * @param {string} [info]
+   */
+  function ap(entry, i, attr, match, info) {
     const val = entry[attr]
     if (val === undefined) throw `记录项 [${i}] 缺少属性 ${attr}`
-    let info
-    if (match === undefined) {
-      info = quot(val)
-    } else if (match instanceof RegExp) {
+    if (match instanceof RegExp) {
       if (typeof val === "string" && match.test(val)) return
-      info = quot(val)
     } else if (Array.isArray(match)) {
       if (match.includes(val)) return
-      info = `${quot(val)}，应为 ${quot(match)}`
-    } else {
+      info = info || `应为 ${quot(match)}`
+    } else if (match !== undefined) {
       if (match === val) return
-      info = `${quot(val)}，应为 ${quot(match)}`
+      info = info || `应为 ${quot(match)}`
     }
-    info = `记录项 [${i}] 的属性 ${attr} 不正确${info ? `：${info}` : ""}`
-    throw info
+
+    let msg = `记录项 [${i}] 的属性 ${attr} 不正确：${quot(val)}`
+    if (info) msg += `（${info}）`
+    throw msg
+  }
+  /**
+   * complain-prop
+   * @template T
+   * @template {keyof T} K
+   * @param {T} entry
+   * @param {number} i
+   * @param {K} attr
+   * @param {string} [info]
+   */
+  function cp(entry, i, attr, info) {
+    ap(entry, i, attr, undefined, info)
   }
   function quot(val) {
     if (typeof val === "string") return JSON.stringify(val)
@@ -423,11 +464,10 @@ function updateEntryListStatus() {
 function importUIGF(data) {
   const { info, list } = data
 
-  if (info && info.lang && info.lang !== "zh-cn")
-    throw "暂不支持导入简体中文以外语言的记录"
   if (uid === null) {
     uid = (info && info.uid && String(info.uid)) || null
   } else {
+    if (!info.uid) throw "导入的记录元数据中缺少 UID"
     if (info && info.uid && String(info.uid) !== uid)
       throw `只能导入同一账号的记录：已导入记录来自 UID ${uid}，正在导入的记录来自 UID ${info.uid}`
   }
@@ -530,7 +570,10 @@ async function fetchEntries(urlStr) {
       const list = obj.data.list
       pages.push(list)
 
-      next = last(list).id
+      if (uid !== null && list[0].uid !== uid)
+        throw `查询 URL 与已导入记录的账号不匹配，请使用同一账号的抽卡分析 URL，或先清空已导入记录再查询：已导入记录来自 UID ${uid}，正在查询的账号是 UID ${list[0].uid}`
+
+      next = list.length ? last(list).id : ""
       page++
     } while (!(list.length < perPage))
   }
@@ -955,7 +998,7 @@ fetch("banners.json")
     for (const id in itemNames.chs) {
       const chsName = itemNames.chs[id]
       Object.prototype.hasOwnProperty.call(chsToIdMap, chsName) ||
-        (chsToIdMap[chsName] = +id)
+        (chsToIdMap[chsName] = id)
     }
     initialize()
   })
