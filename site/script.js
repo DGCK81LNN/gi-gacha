@@ -227,8 +227,8 @@ function subtractTime(aa, bb) {
   if (b.length <= 10) b += " 00:00"
   a = Date.parse(a)
   b = Date.parse(b)
-  if (isNaN(a)) throw `subtractTime: 左操作数（${aa}）无法解析`
-  if (isNaN(b)) throw `subtractTime: 右操作数（${bb}）无法解析`
+  if (isNaN(a)) throw new Error(`subtractTime: 左操作数（${aa}）无法解析`)
+  if (isNaN(b)) throw new Error(`subtractTime: 右操作数（${bb}）无法解析`)
   return (a - b) / 1000
 }
 
@@ -333,11 +333,11 @@ function addEntries(entries) {
 
 /** @param {GachaEntry[]} entries */
 function validateEntries(entries) {
-  if (!Array.isArray(entries)) throw "记录列表不是数组"
-  if (entries.length < 1) throw "记录为空"
+  if (!Array.isArray(entries)) throw new Error("记录列表不是数组")
+  if (entries.length < 1) throw new Error("记录为空")
 
   for (const [i, entry] of entries.entries()) {
-    if (typeof entry !== "object") throw `记录项 [${i}] 不是对象`
+    if (typeof entry !== "object") throw new Error(`记录项 [${i}] 不是对象`)
     ap(entry, i, "time", datetimeRe)
     ap(entry, i, "rank_type", ["3", "4", "5"])
     ap(entry, i, "gacha_type", ["100", "200", "301", "302", "400"])
@@ -382,7 +382,7 @@ function validateEntries(entries) {
    */
   function ap(entry, i, attr, match, info) {
     const val = entry[attr]
-    if (val === undefined) throw `记录项 [${i}] 缺少属性 ${attr}`
+    if (val === undefined) throw new Error(`记录项 [${i}] 缺少属性 ${attr}`)
     if (match instanceof RegExp) {
       if (typeof val === "string" && match.test(val)) return
     } else if (Array.isArray(match)) {
@@ -395,7 +395,7 @@ function validateEntries(entries) {
 
     let msg = `记录项 [${i}] 的属性 ${attr} 不正确：${quot(val)}`
     if (info) msg += `（${info}）`
-    throw msg
+    throw new Error(msg)
   }
   /**
    * complain-prop
@@ -473,9 +473,11 @@ function importUIGF(data) {
   if (uid === null) {
     uid = (info && info.uid && String(info.uid)) || null
   } else {
-    if (!info.uid) throw "导入的记录元数据中缺少 UID"
+    if (!info.uid) throw new Error("导入的记录元数据中缺少 UID")
     if (info && info.uid && String(info.uid) !== uid)
-      throw `只能导入同一账号的记录：已导入记录来自 UID ${uid}，正在导入的记录来自 UID ${info.uid}`
+      throw new Error(
+        `只能导入同一账号的记录：已导入记录来自 UID ${uid}，正在导入的记录来自 UID ${info.uid}`
+      )
   }
 
   addEntries(list)
@@ -494,10 +496,10 @@ function importUIGF(data) {
   } else if (info && !isNaN(info.region_time_zone)) {
     const infoRTZ = Number(info.region_time_zone)
     if (infoRTZ !== timeZone)
-      throw (
+      throw new Error(
         `记录的时区不匹配，无法合并：` +
-        `已导入记录时区偏移为 ${signed(timeZone)} 小时，` +
-        `正在导入的记录时区偏移为 ${signed(infoRTZ)} 小时`
+          `已导入记录时区偏移为 ${signed(timeZone)} 小时，` +
+          `正在导入的记录时区偏移为 ${signed(infoRTZ)} 小时`
       )
   }
 }
@@ -525,7 +527,8 @@ function makeQueryString(record) {
  */
 function fixJSON(json) {
   json = json.match(/^((?:"(?:\\[\s\S]|[^"])*"|[^<])*)/)[1].trim()
-  if (!json) throw "会话失效，请刷新页面。若有未保存的数据，请注意保存！"
+  if (!json)
+    throw new Error("会话失效，请刷新页面。若有未保存的数据，请注意保存！")
   return json
 }
 
@@ -548,7 +551,7 @@ async function fetchEntries(urlStr) {
   let params = {}
   for (const key of neededParams) {
     const val = findSearchParam(urlStr, key)
-    if (!val) throw `输入网址中缺少参数 ${key}`
+    if (!val) throw new Error(`输入网址中缺少参数 ${key}`)
     params[key] = val
   }
   for (const key of optionalParams) {
@@ -589,16 +592,19 @@ async function fetchEntries(urlStr) {
       try {
         obj = JSON.parse(json)
       } catch (e) {
-        if (resp.status >= 400) throw `HTTP ${resp.status} ${resp.statusText}`
+        if (resp.status >= 400)
+          throw new Error(`HTTP ${resp.status} ${resp.statusText}`)
         throw e
       }
       if (!obj.data)
-        throw `${obj.message || "未知错误"}（错误码 ${obj.retcode}）`
+        throw new Error(`${obj.message || "未知错误"}（错误码 ${obj.retcode}）`)
       const list = obj.data.list
       pages.push(list)
 
       if (uid !== null && list[0].uid !== uid)
-        throw `查询 URL 与已导入记录的账号不匹配，请使用同一账号的抽卡分析 URL，或先清空已导入记录再查询：已导入记录来自 UID ${uid}，正在查询的账号是 UID ${list[0].uid}`
+        throw new Error(
+          `查询 URL 与已导入记录的账号不匹配，请使用同一账号的抽卡分析 URL，或先清空已导入记录再查询：已导入记录来自 UID ${uid}，正在查询的账号是 UID ${list[0].uid}`
+        )
 
       next = list.length ? last(list).id : ""
       page++
@@ -606,7 +612,7 @@ async function fetchEntries(urlStr) {
   }
 
   const list = Array.prototype.concat(...pages)
-  if (list.length === 0) throw "查询结果全为空"
+  if (list.length === 0) throw new Error("查询结果全为空")
 
   list.reverse()
   list.sort((a, b) => (a.time > b.time ? 1 : a.time < b.time ? -1 : 0))
