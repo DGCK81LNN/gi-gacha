@@ -468,6 +468,14 @@ function updateEntryListStatus() {
 
 /** @param {UIGFMergedHistory} data */
 function importUIGF(data) {
+  if (
+    typeof data !== "object" ||
+    typeof data.info !== "object" ||
+    typeof data.list !== "object"
+  )
+    throw new Error(
+      "这不是 UIGF 格式的抽卡记录文件：根节点或其 info、list 属性不是对象"
+    )
   const { info, list } = data
 
   if (uid === null) {
@@ -944,7 +952,14 @@ function initialize() {
         }
         r.readAsText(file)
       })
-      const data = JSON.parse(json)
+      let data
+      try {
+        data = JSON.parse(json)
+      } catch (err) {
+        throw new Error(
+          `这不是 UIGF 格式的抽卡记录文件：JSON 解析失败（${err}）`
+        )
+      }
       importUIGF(data)
     } catch (err) {
       alert(`读取记录出错😭\n${err}`)
