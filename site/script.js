@@ -14,6 +14,10 @@ function last(array) {
 function normalizeTime(time) {
   return time.replace(/\//g, "-")
 }
+/** @param {number} num */
+function signed(num) {
+  return num > 0 ? `+${num}` : String(num)
+}
 /**
  * @param {string} n
  */
@@ -271,6 +275,8 @@ let chsToIdMap = {}
 let entryList = []
 /** @type {string} */
 let uid = null
+/** @type {number} */
+let timeZone = null
 let unsavedChanges = false
 
 /**
@@ -473,6 +479,27 @@ function importUIGF(data) {
   }
 
   addEntries(list)
+
+  if (timeZone === null) {
+    timeZone =
+      info && !isNaN(info.region_time_zone)
+        ? Number(info.region_time_zone)
+        : uid === null
+        ? null
+        : uid[0] === "6"
+        ? -5
+        : uid[0] === "7"
+        ? 1
+        : 8
+  } else if (info && !isNaN(info.region_time_zone)) {
+    const infoRTZ = Number(info.region_time_zone)
+    if (infoRTZ !== timeZone)
+      throw (
+        `记录的时区不匹配，无法合并：` +
+        `已导入记录时区偏移为 ${signed(timeZone)} 小时，` +
+        `正在导入的记录时区偏移为 ${signed(infoRTZ)} 小时`
+      )
+  }
 }
 
 /**
@@ -600,6 +627,7 @@ async function fetchEntries(urlStr) {
 function clearEntries() {
   entryList.length = 0
   uid = null
+  timeZone = null
   updateEntryListStatus()
 }
 
@@ -968,7 +996,8 @@ function initialize() {
         export_timestamp: Math.floor(Date.now() / 1000),
         export_app: "dgck81lnn gi gacha visualize",
         export_app_version: "v0.3",
-        uigf_version: "v2.3",
+        uigf_version: "v2.4",
+        region_time_zone: timeZone,
       },
       list: entryList.slice(0).reverse(),
     }

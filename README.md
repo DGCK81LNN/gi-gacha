@@ -33,9 +33,9 @@ If you discover bugs or have any suggestions, feel free to submit an issue!
 
   Show/hide standard & beginner banner history
 
-- [X] 支持 [UIGF] v2.3
+- [X] 支持 [UIGF] v2.4
 
-  Support for [UIGF] v2.3
+  Support for [UIGF] v2.4
 
 - [ ] 更好的 UI
 
@@ -44,6 +44,10 @@ If you discover bugs or have any suggestions, feel free to submit an issue!
 - [ ] 支持简体中文以外的语言
 
   Support for languages other than Simplified Chinese
+
+- [ ] 时区转换
+
+  Time zone conversion
 
 - [ ] _《崩坏:星穹铁道抽卡记录可视化》_
 

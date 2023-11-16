@@ -50,6 +50,7 @@ interface UIGFMergedHistory {
     export_app?: string
     export_app_version?: string
     uigf_version?: string
+    region_time_zone?: number
   }
   list: GachaEntry[]
 }
