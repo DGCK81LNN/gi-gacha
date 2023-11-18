@@ -582,7 +582,8 @@ async function fetchEntries(urlStr) {
     let page = 1
 
     params.gacha_type = type
-    do {
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
       params.page = page
       params.end_id = next
       log(`${typeName}池 第 ${page} 页…`)
@@ -609,14 +610,15 @@ async function fetchEntries(urlStr) {
       const list = obj.data.list
       pages.push(list)
 
-      if (uid !== null && list[0].uid !== uid)
+      if (list.length && uid !== null && list[0].uid !== uid)
         throw new Error(
           `查询 URL 与已导入记录的账号不匹配，请使用同一账号的抽卡分析 URL，或先清空已导入记录再查询：已导入记录来自 UID ${uid}，正在查询的账号是 UID ${list[0].uid}`
         )
 
+      if (list.length < perPage) break
       next = list.length ? last(list).id : ""
       page++
-    } while (!(list.length < perPage))
+    }
   }
 
   const list = Array.prototype.concat(...pages)
