@@ -1013,6 +1013,7 @@ function initialize() {
   $$$("exportbtn").onclick = () => {
     /** @type {UIGFMergedHistory} */
     const obj = {
+      $schema: "https://uigf.org/schema/uigf.json",
       info: {
         uid,
         lang: "zh-cn",
