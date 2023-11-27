@@ -18,7 +18,12 @@ jobs:
         )
       )
     runs-on: ubuntu-latest
-    environment: lnnsite
+    strategy:
+      matrix:
+        environment:
+        - lnnsite
+        - vudrux.site
+    environment: ${{ matrix.environment }}
     steps:
     - name: Check out
       uses: actions/checkout@v2
@@ -29,4 +34,4 @@ jobs:
         server: ${{ vars.FTP_SERVER }}
         username: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
-        server-dir: htdocs/gi/gacha/
+        server-dir: ${{ vars.SERVER_DIR }}
