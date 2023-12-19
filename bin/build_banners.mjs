@@ -51,25 +51,22 @@ function getEventBannerLabel(type, fiveStars) {
 }
 
 async function makeBannerData() {
-  // 从 Snap.Metadata 获取物品名称、ID 对照表
+  // 从 UIGF.org 获取物品名称、ID 对照表
   /**
-   * @param {Language} lang
+   * @param {string} lang
    */
   async function getDict(lang) {
-    const { data: csv } = await axios({
-      url: `https://github.com/DGP-Studio/Snap.Metadata/raw/main/CheatTable/${lang.toUpperCase()}/AvatarAndWeapon.csv`,
-      responseType: "text",
+    /** @type {{ data: Record<string, number> }} */
+    const { data } = await axios({
+      url: `https://api.uigf.org/dict/genshin/${lang}.json`,
+      responseType: "json",
     })
-    /** @type {Record<number, string>} */
-    const data = {}
-    for (const line of csv.trim().split("\n")) {
-      const [ids, name] = line.split(",")
-      const id = +ids
-      if (!id || !name) continue
-      if (id < 11000 || (id >= 20000 && id < 10000000) || id >= 11000000)
-        continue
-      data[id] = name
+    for (const name in data) {
+      const id = data[name]
+      if (!((id >= 11000 && id < 20000) || (id >= 1e7 && id < 1.1e7)))
+        delete data[name]
     }
+
     return data
   }
 
@@ -87,16 +84,16 @@ async function makeBannerData() {
     responseType: "json",
   }).then(response => response.data.expandtemplates.wikitext)
 
-  const enInvertedDict = invertDict(await dictPromises.en)
-  const chsDict = await dictPromises.chs
+  const enDict = await dictPromises.en
+  const chsInvertedDict = invertDict(await dictPromises.chs)
   /** @param {string} name */
   function enToChs(name) {
-    if (!enInvertedDict.hasOwnProperty(name))
+    if (!enDict.hasOwnProperty(name))
       throw new Error(`Item name not found: '${name}'`)
-    const id = enInvertedDict[name]
-    if (!chsDict.hasOwnProperty(id))
+    const id = enDict[name]
+    if (!chsInvertedDict.hasOwnProperty(id))
       throw new Error(`Chinese name not found for item '${name}' (${id})`)
-    return chsDict[id]
+    return chsInvertedDict[id]
   }
 
   /**
@@ -199,7 +196,7 @@ async function makeBannerData() {
   }
 
   const itemNames = {
-    chs: chsDict,
+    chs: chsInvertedDict,
   }
 
   return {
