@@ -62,10 +62,12 @@ class PityTracker {
     /** 当前处于大保底时，上次小保底歪时的抽数。 */
     this.charLost5050Pity = 0
     this.weaponPity = 0
+    this.chronicledPity = 0
     this.stdPity = 0
     this.charUncertain = true
     this.charLost5050Uncertain = false
     this.weaponUncertain = true
+    this.chronicledUncertain = true
     this.stdUncertain = true
   }
 
@@ -80,6 +82,8 @@ class PityTracker {
         return "char"
       case "302":
         return "weapon"
+      case "500":
+        return "chronicled"
       case "200":
         return "std"
       case "100":
@@ -214,7 +218,7 @@ class PityTracker {
 }
 
 /** @type {PityType[]} */
-PityTracker.pityTypes = ["char", "charLost5050", "weapon", "std"]
+PityTracker.pityTypes = ["char", "charLost5050", "weapon", "chronicled", "std"]
 
 /**
  * @param {string} aa
@@ -340,7 +344,7 @@ function validateEntries(entries) {
     if (typeof entry !== "object") throw new Error(`记录项 [${i}] 不是对象`)
     ap(entry, i, "time", datetimeRe)
     ap(entry, i, "rank_type", ["3", "4", "5"])
-    ap(entry, i, "gacha_type", ["100", "200", "301", "302", "400"])
+    ap(entry, i, "gacha_type", ["100", "200", "301", "302", "400", "500"])
     if (entry.id && (typeof entry.id !== "string" || isNaN(entry.id)))
       cp(entry, i, "id")
     if (!entry.item_id) {
@@ -553,6 +557,7 @@ async function fetchEntries(urlStr) {
     ["302", "武器"],
     ["100", "新手"],
     ["200", "常驻"],
+    ["500", "集录"],
   ]
 
   /** @type {Record<string, string>} */
@@ -699,6 +704,7 @@ function render({
   showStd = false,
   charUncertain = false,
   weaponUncertain = false,
+  chronicledUncertain = false,
   stdUncertain = false,
 } = {}) {
   const $container = document.createDocumentFragment()
@@ -757,6 +763,7 @@ function render({
         400: "角色池2",
         302: "武器池",
         200: "常驻池",
+        500: "集录池",
       }[type]
       tooltip = bannerType + "\n"
       tooltip += `${banner.start} 至 ${banner.end}\n\n`
@@ -784,7 +791,12 @@ function render({
   }
 
   const pity = new PityTracker()
-  Object.assign(pity, { charUncertain, weaponUncertain, stdUncertain })
+  Object.assign(pity, {
+    charUncertain,
+    weaponUncertain,
+    chronicledUncertain,
+    stdUncertain,
+  })
 
   let prevVerHalf = null
   let prevDate = ""
@@ -913,6 +925,9 @@ function render({
   $E($footinfo, "div", {
     textContent: `武器：${pity.stat("302").message}`,
   })
+  $E($footinfo, "div", {
+    textContent: `集录：${pity.stat("500").message}`,
+  })
   if (showStd) {
     $E($footinfo, "div", {
       textContent: `常驻：${pity.stat("200").message}`,
@@ -1003,6 +1018,7 @@ function initialize() {
         showStd: $$$("option-showstd").checked,
         charUncertain: $$$("option-uncertain-char").checked,
         weaponUncertain: $$$("option-uncertain-weapon").checked,
+        chronicledUncertain: $$$("option-uncertain-chronicled").checked,
         stdUncertain: $$$("option-uncertain-std").checked,
       })
     } catch (err) {
@@ -1020,7 +1036,7 @@ function initialize() {
         export_timestamp: Math.floor(Date.now() / 1000),
         export_app: "dgck81lnn gi gacha visualize",
         export_app_version: "v0.3",
-        uigf_version: "v2.4",
+        uigf_version: "v3.0",
         region_time_zone: timeZone,
       },
       list: entryList.slice(0).reverse(),

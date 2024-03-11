@@ -1,7 +1,7 @@
-type GachaType = "100" | "200" | "301" | "302" | "400"
-type UIGFGachaType = "100" | "200" | "301" | "302"
-type GachaTypeName = "char" | "weapon" | "std" | "novice"
-type PityType = "char" | "charLost5050" | "weapon" | "std"
+type GachaType = "100" | "200" | "301" | "302" | "400" | "500"
+type UIGFGachaType = "100" | "200" | "301" | "302" | "500"
+type GachaTypeName = "char" | "weapon" | "chronicled" | "std" | "novice"
+type PityType = "char" | "charLost5050" | "weapon" | "chronicled" | "std"
 type Rarity = "3" | "4" | "5"
 type Language =
   | "chs"

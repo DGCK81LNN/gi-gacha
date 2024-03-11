@@ -42,6 +42,7 @@ const charaShortNames = {
  * @param {string} fiveStars
  */
 function getEventBannerLabel(type, fiveStars) {
+  if (type === "500") return "集录"
   if (type === "302") return "武器"
   const charaName = fiveStars[0]
   if (charaShortNames.hasOwnProperty(charaName))
@@ -135,7 +136,8 @@ async function makeBannerData() {
     const type = info.gacha_type
     const start = info.time_start.replace(/ (09|10|11):.*/, "")
     const end = info.time_end
-    const fiveStarCount = info.gacha_type === "302" ? 2 : 1
+    const fiveStarCount =
+      info.gacha_type === "500" ? Infinity : info.gacha_type === "302" ? 2 : 1
     const fiveStars = featuring.slice(0, fiveStarCount).map(enToChs)
     const fourStars = featuring.slice(fiveStarCount).map(enToChs)
 
