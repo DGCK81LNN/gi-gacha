@@ -162,6 +162,15 @@ async function makeBannerData() {
       })
     }
   }
+  eventBanners.sort((a, b) => {
+    if (a.start < b.start) return -1
+    if (a.start > b.start) return 1
+    const aType = a.type === "400" ? "301-2" : a.type
+    const bType = b.type === "400" ? "301-2" : b.type
+    if (aType < bType) return -1
+    if (aType > bType) return 1
+    return 0
+  })
 
   const stdBanners = []
   const stdFiveStars =
