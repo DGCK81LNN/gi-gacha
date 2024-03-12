@@ -124,23 +124,22 @@ async function makeBannerData() {
         .filter(kvpair => kvpair)
         .map(kvpair => kvpair.split("=", 2))
     )
-    if (!info.time_start) continue
-    assertTimeZoneAsia(info.time_start_offset, i, "time_start_offset")
-    assertTimeZoneAsia(info.time_end_offset, i, "time_end_offset")
-
-    const featuring = info.featuring.split(",")
-    if (featuring.includes("Unknown Character")) {
-      console.warn(`Skipping line ${i} because pool contains Unknown Character`)
+    if (!info.time_start) {
+      console.warn(`Skipping line ${i} because pool start time is unknown`)
       continue
     }
+    if (!info.featuring5 || !info.featuring4) {
+      console.warn(`Skipping line ${i} because pool contents not fully known`)
+      continue
+    }
+    assertTimeZoneAsia(info.time_start_offset, i, "time_start_offset")
+    assertTimeZoneAsia(info.time_end_offset, i, "time_end_offset")
 
     const type = info.gacha_type
     const start = info.time_start.replace(/ (09|10|11):.*/, "")
     const end = info.time_end
-    const fiveStarCount =
-      info.gacha_type === "500" ? Infinity : info.gacha_type === "302" ? 2 : 1
-    const fiveStars = featuring.slice(0, fiveStarCount).map(enToChs)
-    const fourStars = featuring.slice(fiveStarCount).map(enToChs)
+    const fiveStars = info.featuring5.split(",").map(enToChs)
+    const fourStars = info.featuring4.split(",").map(enToChs)
 
     eventBanners.push({
       label: `${getEventBannerLabel(type, fiveStars)}池`,
