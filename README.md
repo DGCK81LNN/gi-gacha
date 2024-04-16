@@ -33,9 +33,9 @@ If you discover bugs or have any suggestions, feel free to submit an issue!
 
   Show/hide standard & beginner banner history
 
-- [X] 支持 [UIGF] v2.4
+- [X] 支持 [UIGF] v3.0
 
-  Support for [UIGF] v2.4
+  Support for [UIGF] v3.0
 
 - [ ] 更好的 UI
 
