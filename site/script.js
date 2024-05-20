@@ -593,7 +593,9 @@ async function fetchEntries(urlStr) {
       params.end_id = next
       log(`${typeName}池 第 ${page} 页…`)
 
-      const resp = await fetch(`${baseURL}?${makeQueryString(params)}`)
+      const resp = await fetch(`${baseURL}?${makeQueryString(params)}`, {
+        cache: "no-store",
+      })
       const json = fixJSON(await resp.text())
       /**
        * @type {{
@@ -1059,7 +1061,7 @@ function initialize() {
   updateEntryListStatus()
 }
 
-fetch("banners.json")
+fetch("banners.json", { cache: "no-cache" })
   .then(resp => resp.text())
   .then(json => {
     const data = JSON.parse(fixJSON(json))
