@@ -577,8 +577,8 @@ async function fetchEntries(urlStr) {
   const host =
     urlStr.includes("hoyoverse") || params.region.startsWith("os")
       ? "hk4e-api-os.hoyoverse.com"
-      : "hk4e-api.mihoyo.com"
-  const baseURL = `proxy.php?https://${host}/event/gacha_info/api/getGachaLog`
+      : "public-operation-hk4e.mihoyo.com"
+  const baseURL = `proxy.php?https://${host}/gacha_info/api/getGachaLog`
 
   /** @type {GachaEntry[][]} */
   const pages = []

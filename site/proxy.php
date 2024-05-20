@@ -20,8 +20,8 @@ if (strtoupper($_SERVER['REQUEST_METHOD']) !== 'GET') {
 $url = $_SERVER['QUERY_STRING'];
 $base_url = strchr($url, '?', true) ?: $url;
 $allow_base_urls = [
-  'https://hk4e-api.mihoyo.com/event/gacha_info/api/getGachaLog',
-  'https://hk4e-api-os.hoyoverse.com/event/gacha_info/api/getGachaLog',
+  'https://public-operation-hk4e.mihoyo.com/gacha_info/api/getGachaLog',
+  'https://hk4e-api-os.hoyoverse.com/gacha_info/api/getGachaLog',
 ];
 if (!in_array($base_url, $allow_base_urls)) {
   complain('网址有误，服务器拒绝代理此请求', -11451400);
