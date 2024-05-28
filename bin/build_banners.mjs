@@ -37,6 +37,7 @@ const charaShortNames = {
   那维莱特: "那维",
   莱欧斯利: "莱欧",
   阿蕾奇诺: "仆人",
+  克洛琳德: "克洛琳德",
 }
 /**
  * @param {string} type
