@@ -28,7 +28,7 @@ jobs:
       url: ${{ vars.DEPLOYMENT_URL }}
     steps:
     - name: Check out
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Deploy
       uses: SamKirkland/FTP-Deploy-Action@v4.3.4
       with:
