@@ -30,7 +30,7 @@ jobs:
     - name: Check out
       uses: actions/checkout@v4
     - name: Deploy
-      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
       with:
         local-dir: ./site/
         server: ${{ vars.FTP_SERVER }}
