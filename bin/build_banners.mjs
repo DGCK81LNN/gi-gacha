@@ -134,7 +134,12 @@ async function makeBannerData() {
       console.warn(`Skipping line ${i} because pool start time is unknown`)
       continue
     }
-    if (!info.featuring5 || !info.featuring4) {
+    if (
+      !info.featuring5 ||
+      !info.featuring4 ||
+      info.featuring5.includes("Unknown Character") ||
+      info.featuring4.includes("Unknown Character")
+    ) {
       console.warn(`Skipping line ${i} because pool contents not fully known`)
       continue
     }
