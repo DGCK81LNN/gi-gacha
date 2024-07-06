@@ -30,14 +30,20 @@ function invertDict(dict) {
 /** @type {Record<string, string>} */
 const charaShortNames = {
   达达利亚: "公子",
+  枫原万叶: "万叶",
+  神里绫华: "绫华",
   雷电将军: "雷神",
+  珊瑚宫心海: "心海",
+  荒泷一斗: "一斗",
+  八重神子: "神子",
+  神里绫人: "绫人",
   纳西妲: "草神",
   流浪者: "散兵",
-  芙宁娜: "水神",
+  艾尔海森: "海森",
   那维莱特: "那维",
   莱欧斯利: "莱欧",
+  芙宁娜: "水神",
   阿蕾奇诺: "仆人",
-  克洛琳德: "克洛琳德",
 }
 /**
  * @param {string} type
@@ -49,7 +55,6 @@ function getEventBannerLabel(type, fiveStars) {
   const charaName = fiveStars[0]
   if (charaShortNames.hasOwnProperty(charaName))
     return charaShortNames[charaName]
-  if (charaName.length > 3) return charaName.slice(-2)
   return charaName
 }
 
