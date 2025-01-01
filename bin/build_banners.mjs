@@ -73,6 +73,8 @@ async function makeBannerData() {
       const id = data[name]
       if (!((id >= 11000 && id < 20000) || (id >= 1e7 && id < 1.1e7)))
         delete data[name]
+      // 磐岩结绿
+      if (id == 11506) data[name] = 11505
     }
 
     return data
