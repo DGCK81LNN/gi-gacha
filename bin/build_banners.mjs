@@ -70,10 +70,16 @@ async function makeBannerData() {
       url: `https://api.uigf.org/dict/genshin/${lang}.json`,
       responseType: "json",
     })
-    for (const name in data) {
+    for (let name in data) {
       const id = data[name]
       if (!((id >= 11000 && id < 20000) || (id >= 1e7 && id < 1.1e7)))
         delete data[name]
+      // workaround https://github.com/UIGF-org/UIGF-API/issues/17
+      if (name.includes("\\")) {
+        delete data[name]
+        name = name.replace(/\\/g, "")
+        data[name] = id
+      }
       // 磐岩结绿
       if (id == 11506) data[name] = 11505
     }
