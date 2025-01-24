@@ -202,6 +202,7 @@ async function makeBannerData() {
   const stdNewFiveStars = {
     "3.1 上半": ["提纳里"],
     "3.6 上半": ["迪希雅"],
+    "5.5 上半": ["梦见月瑞希"],
   }
 
   {
@@ -218,7 +219,12 @@ async function makeBannerData() {
     let fiveStars = stdFiveStars
     let start = "2020-09-28"
     for (const [label, newFiveStars] of Object.entries(stdNewFiveStars)) {
-      const end = versionHalves.find(vh => vh.label === label).start
+      const vh = versionHalves.find(vh => vh.label === label)
+      if (!vh) {
+        console.warn(`Version half '${label}' not found, skipping`)
+        continue
+      }
+      const end = vh.start
       addStdBanner(start, end, fiveStars)
       fiveStars = fiveStars.concat(newFiveStars)
       start = end
