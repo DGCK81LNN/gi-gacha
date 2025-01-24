@@ -232,6 +232,15 @@ async function makeBannerData() {
     addStdBanner(start, "9999-12-31", fiveStars)
   }
 
+  // Delete unused entries from item name dict
+  outer: for (const [key, value] of Object.entries(chsInvertedDict)) {
+    for (const { fiveStars, fourStars } of [...eventBanners, ...stdBanners]) {
+      if (fiveStars?.includes(value) || fourStars?.includes(value))
+        continue outer
+    }
+    delete chsInvertedDict[key]
+  }
+
   const itemNames = {
     chs: chsInvertedDict,
   }
