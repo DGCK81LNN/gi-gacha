@@ -21,7 +21,7 @@ jobs:
     strategy:
       matrix:
         environment:
-        - lnnsite
+        #- lnnsite
         - vudrux.site
     environment:
       name: ${{ matrix.environment }}
