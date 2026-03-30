@@ -48,6 +48,15 @@ const charaShortNames = {
   梦见月瑞希: "瑞希",
   哥伦比娅: "少女",
 }
+/** @type {Record<string, string>} */
+const versionHalfNames = {
+  "Luna I": "月之一",
+  "Luna II": "月之二",
+  "Luna III": "月之三",
+  "Luna IV": "月之四",
+  "Luna V": "月之五",
+  "Luna VI": "月之六",
+}
 /**
  * @param {string} type
  * @param {string} fiveStars
@@ -177,8 +186,11 @@ async function makeBannerData() {
     if (type === "302") {
       inSecondHalf = info.version === currentVersion
       currentVersion = info.version
+      const versionLabel = versionHalfNames.hasOwnProperty(currentVersion)
+        ? versionHalfNames[currentVersion]
+        : currentVersion
       versionHalves.push({
-        label: `${currentVersion} ${inSecondHalf ? "下半" : "上半"}`,
+        label: `${versionLabel} ${inSecondHalf ? "下半" : "上半"}`,
         start: start,
         end: inSecondHalf ? roundToDay(end) : `${end.split(" ")[0]} 18:00:00`,
       })
