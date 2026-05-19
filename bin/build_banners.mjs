@@ -56,6 +56,8 @@ const versionHalfNames = {
   "Luna IV": "月之四",
   "Luna V": "月之五",
   "Luna VI": "月之六",
+  "Luna VII": "月之七",
+  "Luna VIII": "月之八",
 }
 /**
  * @param {string} type
