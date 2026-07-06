@@ -544,6 +544,14 @@ function fixJSON(json) {
   return json
 }
 
+let lastProxyFetchTime = 0
+async function waitForProxyRateLimit() {
+  const now = Date.now()
+  const waitTime = Math.max(0, 1000 - (now - lastProxyFetchTime))
+  if (waitTime > 0) await new Promise(resolve => setTimeout(resolve, waitTime))
+  lastProxyFetchTime = Date.now()
+}
+
 /**
  * @param {string} urlStr
  */
@@ -593,6 +601,7 @@ async function fetchEntries(urlStr) {
       params.end_id = next
       log(`${typeName}池 第 ${page} 页…`)
 
+      await waitForProxyRateLimit()
       const resp = await fetch(`${baseURL}?${makeQueryString(params)}`, {
         cache: "no-store",
       })
