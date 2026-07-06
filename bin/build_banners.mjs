@@ -45,8 +45,10 @@ const charaShortNames = {
   芙宁娜: "水神",
   阿蕾奇诺: "仆人",
   茜特菈莉: "奶奶",
+  玛薇卡: "火神",
   梦见月瑞希: "瑞希",
   哥伦比娅: "少女",
+  桑多涅: "木偶",
 }
 /** @type {Record<string, string>} */
 const versionHalfNames = {
